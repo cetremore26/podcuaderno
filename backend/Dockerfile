@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM eclipse-temurin:25-jdk AS build
 WORKDIR /workspace
-COPY gradlew settings.gradle.kts build.gradle.kts ./
+COPY gradlew settings.gradle.kts settings-gradle.lockfile build.gradle.kts gradle.lockfile ./
 COPY gradle gradle
 RUN chmod +x gradlew
 RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon dependencies > /dev/null
