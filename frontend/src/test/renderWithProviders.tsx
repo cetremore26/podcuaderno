@@ -1,11 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, type RenderResult } from '@testing-library/react';
 import type { ReactElement } from 'react';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, type InitialEntry } from 'react-router';
 
 interface RenderOptions {
-  /** Initial URL of the in-memory router. */
-  readonly route?: string;
+  /** Initial URL of the in-memory router, or a location with state. */
+  readonly route?: InitialEntry;
 }
 
 export interface RenderWithProvidersResult extends RenderResult {
