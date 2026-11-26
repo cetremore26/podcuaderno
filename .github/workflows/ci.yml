@@ -102,3 +102,52 @@ jobs:
         run: docker compose logs
       - if: always()
         run: docker compose down -v
+
+  sonar:
+    name: SonarCloud
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    # Job-level "if" cannot read secrets, so each step checks the token instead.
+    # Pull requests from Dependabot or forks get no secrets and skip the analysis.
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - if: env.SONAR_TOKEN == ''
+        run: echo "SONAR_TOKEN is not configured; skipping SonarCloud analysis."
+      - if: env.SONAR_TOKEN != ''
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - if: env.SONAR_TOKEN != ''
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+      - if: env.SONAR_TOKEN != ''
+        uses: gradle/actions/setup-gradle@v6
+      - if: env.SONAR_TOKEN != ''
+        name: Backend build with coverage
+        working-directory: backend
+        run: ./gradlew build -x spotlessCheck
+      - if: env.SONAR_TOKEN != ''
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+      - if: env.SONAR_TOKEN != ''
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - if: env.SONAR_TOKEN != ''
+        name: Frontend tests with coverage
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm test:coverage
+      - if: env.SONAR_TOKEN != ''
+        uses: SonarSource/sonarqube-scan-action@v8
+        env:
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
