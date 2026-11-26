@@ -22,9 +22,7 @@ class SmtpEmailSenderTests {
                 mailSender, new MailProperties("no-responder@podcuaderno.local", "http://localhost:3000/"));
 
         sender.sendVerificationEmail(
-                new EmailAddress("ana@correo.com"),
-                OpaqueToken.of("abc123"),
-                Instant.parse("2026-12-15T10:00:00Z"));
+                new EmailAddress("ana@correo.com"), OpaqueToken.of("abc123"), Instant.parse("2026-12-15T10:00:00Z"));
 
         ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(mailSender).send(captor.capture());

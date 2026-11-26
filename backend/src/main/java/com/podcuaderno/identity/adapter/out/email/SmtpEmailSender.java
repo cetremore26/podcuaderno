@@ -17,8 +17,7 @@ class SmtpEmailSender implements EmailSender {
     static final String VERIFICATION_SUBJECT = "Activa tu cuenta de Podcuaderno";
     static final String VERIFICATION_PATH = "/verificar-correo#token=";
 
-    private static final String VERIFICATION_TEXT =
-            """
+    private static final String VERIFICATION_TEXT = """
             Hola:
 
             Gracias por crear tu cuenta en Podcuaderno. Para activarla, abre este enlace:

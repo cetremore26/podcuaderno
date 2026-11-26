@@ -26,6 +26,8 @@ public class RecordingEmailSender implements EmailSender {
 
     public Optional<String> lastTokenFor(String email) {
         List<SentEmail> emails = sentTo(email);
-        return emails.isEmpty() ? Optional.empty() : Optional.of(emails.getLast().token());
+        return emails.isEmpty()
+                ? Optional.empty()
+                : Optional.of(emails.getLast().token());
     }
 }

@@ -1,6 +1,7 @@
 package com.podcuaderno.identity.adapter.in.web;
 
 import com.podcuaderno.identity.application.port.in.RegisterUserUseCase;
+import com.podcuaderno.identity.application.port.in.ResendEmailVerificationUseCase;
 import com.podcuaderno.identity.application.port.in.VerifyEmailUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,10 +18,15 @@ import org.springframework.web.bind.annotation.RestController;
 class RegistrationController {
 
     private final RegisterUserUseCase registerUser;
+    private final ResendEmailVerificationUseCase resendEmailVerification;
     private final VerifyEmailUseCase verifyEmail;
 
-    RegistrationController(RegisterUserUseCase registerUser, VerifyEmailUseCase verifyEmail) {
+    RegistrationController(
+            RegisterUserUseCase registerUser,
+            ResendEmailVerificationUseCase resendEmailVerification,
+            VerifyEmailUseCase verifyEmail) {
         this.registerUser = registerUser;
+        this.resendEmailVerification = resendEmailVerification;
         this.verifyEmail = verifyEmail;
     }
 
@@ -30,6 +36,15 @@ class RegistrationController {
             description = "Always answers 202 without a body, whether or not the email is already registered.")
     ResponseEntity<Void> register(@Valid @RequestBody RegistrationRequest body) {
         registerUser.register(body.toCommand());
+        return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/email-verifications")
+    @Operation(
+            summary = "Send a new verification link",
+            description = "Always answers 202, whether or not the email belongs to a pending account.")
+    ResponseEntity<Void> resend(@Valid @RequestBody EmailRequest body) {
+        resendEmailVerification.resend(body.toResendCommand());
         return ResponseEntity.accepted().build();
     }
 

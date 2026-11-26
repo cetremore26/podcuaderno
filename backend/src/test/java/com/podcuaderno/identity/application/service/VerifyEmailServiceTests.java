@@ -32,8 +32,7 @@ class VerifyEmailServiceTests {
     }
 
     private User pendingUserWithToken() {
-        User user = User.register(
-                UserId.newId(), new EmailAddress("ana@correo.com"), new PasswordHash("{fake}x"), NOW);
+        User user = User.register(UserId.newId(), new EmailAddress("ana@correo.com"), new PasswordHash("{fake}x"), NOW);
         users.save(user);
         tokens.save(EmailVerificationToken.issue(EmailVerificationTokenId.newId(), user.id(), raw.hash(), NOW));
         return user;

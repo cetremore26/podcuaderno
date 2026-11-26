@@ -8,6 +8,8 @@ import static org.mockito.Mockito.verify;
 
 import com.podcuaderno.identity.application.port.in.RegisterUserCommand;
 import com.podcuaderno.identity.application.port.in.RegisterUserUseCase;
+import com.podcuaderno.identity.application.port.in.ResendEmailVerificationCommand;
+import com.podcuaderno.identity.application.port.in.ResendEmailVerificationUseCase;
 import com.podcuaderno.identity.application.port.in.VerifyEmailCommand;
 import com.podcuaderno.identity.application.port.in.VerifyEmailUseCase;
 import com.podcuaderno.identity.domain.exception.InvalidVerificationTokenException;
@@ -40,6 +42,9 @@ class RegistrationControllerTests {
 
     @MockitoBean
     private VerifyEmailUseCase verifyEmail;
+
+    @MockitoBean
+    private ResendEmailVerificationUseCase resendEmailVerification;
 
     private MvcTestResult post(String body) {
         return post("/api/v1/auth/registrations", body);
@@ -121,5 +126,21 @@ class RegistrationControllerTests {
 
         assertThat(result).hasStatus(HttpStatus.BAD_REQUEST);
         verify(verifyEmail, never()).verify(any());
+    }
+
+    @Test
+    void acceptsAResendRequest() {
+        MvcTestResult result = post("/api/v1/auth/email-verifications", "{\"email\": \"ana@correo.com\"}");
+
+        assertThat(result).hasStatus(HttpStatus.ACCEPTED);
+        verify(resendEmailVerification).resend(new ResendEmailVerificationCommand("ana@correo.com"));
+    }
+
+    @Test
+    void rejectsAResendRequestWithAMalformedEmail() {
+        MvcTestResult result = post("/api/v1/auth/email-verifications", "{\"email\": \"ana\"}");
+
+        assertThat(result).hasStatus(HttpStatus.BAD_REQUEST);
+        verify(resendEmailVerification, never()).resend(any());
     }
 }

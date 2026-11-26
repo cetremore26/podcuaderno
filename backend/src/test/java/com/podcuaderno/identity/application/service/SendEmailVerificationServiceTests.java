@@ -27,8 +27,7 @@ class SendEmailVerificationServiceTests {
     }
 
     private User pendingUser() {
-        User user = User.register(
-                UserId.newId(), new EmailAddress("ana@correo.com"), new PasswordHash("{fake}x"), NOW);
+        User user = User.register(UserId.newId(), new EmailAddress("ana@correo.com"), new PasswordHash("{fake}x"), NOW);
         users.save(user);
         return user;
     }
@@ -72,8 +71,7 @@ class SendEmailVerificationServiceTests {
         serviceAt(NOW.plus(Duration.ofMinutes(1))).send(new SendEmailVerificationCommand(user.id()));
         assertThat(emailSender.sent()).hasSize(1);
 
-        serviceAt(NOW.plus(Duration.ofMinutes(2)).plusSeconds(1))
-                .send(new SendEmailVerificationCommand(user.id()));
+        serviceAt(NOW.plus(Duration.ofMinutes(2)).plusSeconds(1)).send(new SendEmailVerificationCommand(user.id()));
         assertThat(emailSender.sent()).hasSize(2);
     }
 }
