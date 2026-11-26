@@ -1,6 +1,8 @@
 package com.podcuaderno.identity.adapter.in.web;
 
 import com.podcuaderno.identity.application.port.in.LogInUseCase;
+import com.podcuaderno.identity.application.port.in.LogOutCommand;
+import com.podcuaderno.identity.application.port.in.LogOutUseCase;
 import com.podcuaderno.identity.application.port.in.RefreshSessionCommand;
 import com.podcuaderno.identity.application.port.in.RefreshSessionUseCase;
 import com.podcuaderno.identity.application.port.in.SessionTokens;
@@ -27,13 +29,19 @@ class SessionController {
 
     private final LogInUseCase logIn;
     private final RefreshSessionUseCase refreshSession;
+    private final LogOutUseCase logOut;
     private final RefreshTokenCookies cookies;
     private final Clock clock;
 
     SessionController(
-            LogInUseCase logIn, RefreshSessionUseCase refreshSession, RefreshTokenCookies cookies, Clock clock) {
+            LogInUseCase logIn,
+            RefreshSessionUseCase refreshSession,
+            LogOutUseCase logOut,
+            RefreshTokenCookies cookies,
+            Clock clock) {
         this.logIn = logIn;
         this.refreshSession = refreshSession;
+        this.logOut = logOut;
         this.cookies = cookies;
         this.clock = clock;
     }
@@ -57,6 +65,20 @@ class SessionController {
             throw new InvalidRefreshTokenException();
         }
         return sessionResponse(refreshSession.refresh(new RefreshSessionCommand(refreshToken)));
+    }
+
+    @PostMapping("/logout")
+    @Operation(
+            summary = "End the session",
+            description = "Revokes the refresh token family on the server and deletes the cookie. Always 204.")
+    ResponseEntity<Void> logOut(
+            @CookieValue(name = RefreshTokenCookies.NAME, required = false) @Nullable String refreshToken) {
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            logOut.logOut(new LogOutCommand(refreshToken));
+        }
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, cookies.clear().toString())
+                .build();
     }
 
     private ResponseEntity<AccessTokenResponse> sessionResponse(SessionTokens tokens) {
