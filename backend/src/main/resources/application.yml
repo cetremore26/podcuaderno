@@ -40,6 +40,9 @@ podcuaderno:
     # Base64 HMAC key of at least 32 bytes. Optional: without it a random key is generated at startup (ADR-0009).
     jwt-secret: ${JWT_SECRET:}
     allowed-origins: ${ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+  identity:
+    # Secure refresh cookie; false only for Safari against plain-http localhost (ADR-0009).
+    refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:true}
   mail:
     from: ${MAIL_FROM:no-responder@podcuaderno.local}
     # Public URL of the web app, used in the links of the emails.
