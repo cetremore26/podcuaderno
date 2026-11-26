@@ -19,6 +19,9 @@ updates:
       # typescript-eslint does not support TypeScript 7 yet (peer range <6.1.0).
       - dependency-name: typescript
         update-types: ["version-update:semver-major"]
+      # Node runtime is pinned to 22 (.nvmrc, CI, Docker); its types follow the runtime major.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     target-branch: develop
@@ -29,8 +32,20 @@ updates:
     target-branch: develop
     schedule: { interval: weekly }
     commit-message: { prefix: build, include: scope }
+    ignore:
+      # Runtime majors (Java 25, Node 22, nginx) are upgraded deliberately through an ADR.
+      - dependency-name: eclipse-temurin
+        update-types: ["version-update:semver-major"]
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
+      - dependency-name: nginx
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: docker-compose
     directory: /
     target-branch: develop
     schedule: { interval: weekly }
     commit-message: { prefix: build, include: scope }
+    ignore:
+      # PostgreSQL majors require a data migration; upgrade deliberately through an ADR.
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
