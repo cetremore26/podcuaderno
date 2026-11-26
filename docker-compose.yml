@@ -24,8 +24,16 @@ services:
       DB_NAME: ${POSTGRES_DB:-podcuaderno}
       DB_USER: ${POSTGRES_USER:-podcuaderno}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-podcuaderno}
-      SPRING_MAIL_HOST: mailpit # used from HU-01 on
-      SPRING_MAIL_PORT: 1025
+      # Mailpit by default; set the SMTP_* variables in .env to deliver through Resend (ADR-0012).
+      SPRING_MAIL_HOST: ${SMTP_HOST:-mailpit}
+      SPRING_MAIL_PORT: ${SMTP_PORT:-1025}
+      SPRING_MAIL_USERNAME: ${SMTP_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_SMTP_AUTH: ${SMTP_AUTH:-false}
+      MAIL_SMTP_STARTTLS: ${SMTP_STARTTLS:-false}
+      MAIL_FROM: ${MAIL_FROM:-no-responder@podcuaderno.local}
+      # Links in the emails point to the frontend served by this stack.
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
       LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs # JSON logs (RNF-12)
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
     ports: ["${BACKEND_PORT:-8080}:8080"]
