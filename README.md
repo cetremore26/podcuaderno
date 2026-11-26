@@ -58,6 +58,8 @@ docker compose up --build
 
 The app serves the API under `/api/` from the same origin, so no CORS setup is needed locally.
 
+**Emails stay local.** Every email the app sends (for example the account verification link) is caught by Mailpit: open `http://localhost:8025` to read it. Nothing reaches a real inbox unless the `SMTP_*` variables point to Resend (see the table below and ADR-0012).
+
 A `.env` file is **optional**: every setting has a default. To override ports or credentials, copy the example and edit it (never commit `.env`):
 
 ```bash
@@ -71,6 +73,16 @@ POSTGRES_PORT=5433 docker compose up --build
 ```
 
 or set `POSTGRES_PORT=5433` in `.env`. The same applies to `BACKEND_PORT`, `FRONTEND_PORT`, `MAILPIT_UI_PORT` and `MAILPIT_SMTP_PORT`.
+
+Other optional settings (all documented in `.env.example`):
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `FRONTEND_URL` | `http://localhost:3000` | Base URL of the links in the emails; must match `FRONTEND_PORT`. |
+| `PRIVACY_CONTACT_EMAIL` | empty | Contact email shown on the privacy policy page; empty means it has not been published yet. |
+| `JWT_SECRET` | empty | Base64 of 32+ bytes that signs the access tokens; empty means a random key per start (ADR-0009). |
+| `REFRESH_COOKIE_SECURE` | `true` | `Secure` flag of the refresh cookie; set it to `false` only for Safari against plain-http localhost. |
+| `SMTP_*`, `MAIL_FROM` | Mailpit | Real email delivery through Resend (ADR-0012). |
 
 Stop the stack with `docker compose down` (add `-v` to also delete the database volume).
 
@@ -113,8 +125,21 @@ Quality checks:
 ```bash
 pnpm lint                    # ESLint, including the import boundary rules
 pnpm test                    # Vitest unit and architecture tests
+pnpm test:coverage           # the same with coverage (coverage/lcov.info feeds SonarCloud)
 pnpm test:e2e                # Playwright smoke tests (run `pnpm exec playwright install chromium` once)
 ```
+
+Copy `frontend/.env.example` to `frontend/.env.local` to set build-time variables such as `VITE_PRIVACY_CONTACT_EMAIL`.
+
+**Full end-to-end test** (registration, verification email, login and first notebook, at desktop size and 360 px). It needs the whole stack, because it reads the verification email from the Mailpit API:
+
+```bash
+docker compose up -d --build --wait
+cd frontend
+E2E_BASE_URL=http://localhost:3000 MAILPIT_URL=http://localhost:8025 pnpm test:e2e
+```
+
+Without those variables the end-to-end test is skipped and only the smoke test runs against `vite preview`. The CI job `E2E` runs the full suite the same way.
 
 ## Contributing / branching
 
