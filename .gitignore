@@ -1,7 +1,8 @@
 # ---- Java / Spring Boot ----
-backend/target/
 backend/build/
 backend/.gradle/
+backend/bin/
+backend/out/
 *.class
 *.log
 hs_err_pid*
