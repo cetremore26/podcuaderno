@@ -14,6 +14,10 @@ java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
 
 repositories { mavenCentral() }
 
+// Reproducible builds: resolved versions are pinned in gradle.lockfile.
+// Refresh after changing dependencies with: ./gradlew dependencies --write-locks
+dependencyLocking { lockAllConfigurations() }
+
 dependencyManagement {
     imports { mavenBom("org.springframework.modulith:spring-modulith-bom:${libs.versions.spring.modulith.get()}") }
 }
