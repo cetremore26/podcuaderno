@@ -1,10 +1,9 @@
 import { Link, Outlet, useLocation } from 'react-router';
+import { useLogout, useSession } from '@/features/auth';
+import { Button } from '@/shared/components/Button';
 
 /** Common header, main landmark and footer with the link to the privacy policy. */
 export function AppLayout() {
-  const { pathname } = useLocation();
-  const onLoginPage = pathname === '/iniciar-sesion';
-
   return (
     <div className="layout">
       <header className="layout__header">
@@ -12,11 +11,7 @@ export function AppLayout() {
           <Link to="/" className="layout__brand">
             Podcuaderno
           </Link>
-          {onLoginPage ? (
-            <Link to="/registro">Crear cuenta</Link>
-          ) : (
-            <Link to="/iniciar-sesion">Iniciar sesión</Link>
-          )}
+          <SessionAction />
         </nav>
       </header>
       <main className="layout__main">
@@ -26,5 +21,24 @@ export function AppLayout() {
         <Link to="/politica-de-datos">Política de datos</Link>
       </footer>
     </div>
+  );
+}
+
+function SessionAction() {
+  const session = useSession();
+  const logout = useLogout();
+  const { pathname } = useLocation();
+
+  if (session) {
+    return (
+      <Button variant="secondary" onClick={() => logout.mutate()} disabled={logout.isPending}>
+        Cerrar sesión
+      </Button>
+    );
+  }
+  return pathname === '/iniciar-sesion' ? (
+    <Link to="/registro">Crear cuenta</Link>
+  ) : (
+    <Link to="/iniciar-sesion">Iniciar sesión</Link>
   );
 }
