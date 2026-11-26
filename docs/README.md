@@ -14,5 +14,5 @@ Trazabilidad: **Objetivos (01) → Requisitos (02) → Historias y casos de uso 
 
 Carpetas que se crearán durante el proyecto:
 
-- [`adr/`](adr/): registros de decisiones de arquitectura (ADR-0001 a ADR-0005 ya registrados; `0000-plantilla.md` para los nuevos).
+- [`adr/`](adr/): registros de decisiones de arquitectura (ADR-0001 a ADR-0008 ya registrados; `0000-plantilla.md` para los nuevos).
 - `retros/`: retrospectivas de cada sprint.

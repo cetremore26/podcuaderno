@@ -1,8 +1,8 @@
 # Backlog, historias de usuario y casos de uso
 
 **Proyecto:** Podcuaderno
-**Versión:** 0.3 (borrador)
-**Fecha:** 25 de noviembre de 2026
+**Versión:** 0.4 (borrador)
+**Fecha:** 26 de noviembre de 2026
 **Autor:** Sebastián
 
 ---
@@ -193,7 +193,7 @@
 
 - `docker compose up` levanta frontend, backend y PostgreSQL.
 - Cada pull request ejecuta compilación, pruebas, análisis estático y cobertura del backend y del frontend.
-- `main` está protegida: solo se integra con los checks en verde.
+- `main` y `develop` están protegidas: solo se integra mediante pull request con los checks en verde (ADR-0006).
 - El pipeline incluye las pruebas de arquitectura: `ApplicationModules.verify()` de Spring Modulith, las reglas de ArchUnit del documento 05 y las reglas de importación de ESLint en el frontend.
 - Existe la estructura de paquetes del documento 05 con un módulo de ejemplo que pasa todas las reglas.
 
@@ -253,7 +253,7 @@ Una historia entra a un sprint cuando tiene criterios de aceptación verificable
 
 Una historia está terminada cuando:
 
-- está en `main` mediante un pull request con los checks en verde y revisado con el checklist del proyecto,
+- está integrada en `develop` mediante un pull request con los checks en verde y revisada con el checklist del proyecto (llega a `main` con la siguiente versión, ADR-0006),
 - tiene pruebas que cubren sus criterios de aceptación (unitarias, de integración o E2E, según corresponda),
 - los endpoints nuevos están documentados en OpenAPI,
 - la interfaz funciona a 360 px y con teclado,
@@ -382,3 +382,4 @@ flowchart LR
 | 0.1 | 25 de noviembre de 2026 | Backlog de la herramienta de línea de comandos. |
 | 0.2 | 25 de noviembre de 2026 | Reescrito para la aplicación web freemium. |
 | 0.3 | 26 de noviembre de 2026 | HU-25 y Definición de Terminado incluyen las pruebas de arquitectura. |
+| 0.4 | 26 de noviembre de 2026 | Gitflow: la Definición de Terminado y HU-25 se refieren a `develop` (ADR-0006). |
