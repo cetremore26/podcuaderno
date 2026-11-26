@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@WebMvcTest
+@WebMvcTest(JwtAuthenticationTests.MeController.class)
 @Import({SecurityConfiguration.class, JwtConfiguration.class, JwtAuthenticationTests.MeController.class})
 class JwtAuthenticationTests {
 
