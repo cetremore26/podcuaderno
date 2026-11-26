@@ -35,6 +35,7 @@ dependencies {
     implementation("org.springframework.modulith:spring-modulith-starter-jpa")
     implementation(libs.springdoc.webmvc.ui)
     runtimeOnly("org.postgresql:postgresql")
+    runtimeOnly(libs.bouncycastle.bcprov) // Argon2id password hashing (ADR-0009)
 
     testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
     testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
