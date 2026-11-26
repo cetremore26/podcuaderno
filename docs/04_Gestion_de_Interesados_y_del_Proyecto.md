@@ -1,7 +1,7 @@
 # Gestión de interesados y del proyecto
 
 **Proyecto:** Podcuaderno
-**Versión:** 0.4 (borrador)
+**Versión:** 0.5 (borrador)
 **Fecha:** 26 de noviembre de 2026
 **Autor:** Sebastián
 
@@ -150,7 +150,7 @@ Escala de 1 (bajo) a 3 (alto). Exposición = probabilidad × impacto.
 | Voz | 0 USD (navegador) | Por carácter, según el precio oficial de Azure. |
 | Hosting del backend y PostgreSQL | Dentro del tope de 10 USD al mes | Se recalcula según el uso. |
 | Dominio | Dentro del tope de 10 USD al mes (prorrateado) | — |
-| Correo transaccional (verificación y recuperación) | Plan gratuito de un proveedor de correo | Se recalcula. |
+| Correo transaccional (verificación y recuperación) | Plan gratuito de Resend por SMTP (ADR-0012) | Se recalcula. |
 | GitHub (código, Actions, Projects) | 0 USD | 0 USD |
 | Pagos | — | Comisión de Mercado Pago por transacción. |
 
@@ -185,3 +185,4 @@ Escala de 1 (bajo) a 3 (alto). Exposición = probabilidad × impacto.
 | 0.2 | 25 de noviembre de 2026 | Reescrito para la aplicación web freemium: nuevos interesados (usuarios, autoridades), riesgos, cronograma de 20 semanas y punto de decisión de la v2. |
 | 0.3 | 26 de noviembre de 2026 | Nombre definitivo Podcuaderno y riesgo R-13 sobre la marca. |
 | 0.4 | 26 de noviembre de 2026 | Flujo de trabajo Gitflow (ADR-0006); herramientas de calidad definidas (Spotless, SonarCloud). |
+| 0.5 | 26 de noviembre de 2026 | Proveedor de correo transaccional: Resend por SMTP (ADR-0012). |
