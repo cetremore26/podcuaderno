@@ -34,6 +34,9 @@ services:
       MAIL_FROM: ${MAIL_FROM:-no-responder@podcuaderno.local}
       # Links in the emails point to the frontend served by this stack.
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      # Optional: base64 of 32+ bytes; empty = a random key per start (ADR-0009).
+      JWT_SECRET: ${JWT_SECRET:-}
+      REFRESH_COOKIE_SECURE: ${REFRESH_COOKIE_SECURE:-true}
       LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs # JSON logs (RNF-12)
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
     ports: ["${BACKEND_PORT:-8080}:8080"]
