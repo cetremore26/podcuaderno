@@ -6,7 +6,14 @@ Nothing here imports React, TanStack Query or React Hook Form, and `core/` depen
 Areas:
 
 - `core/http`: the only code that talks to the network. `requestJson` adds the
-  `/api/v1` base path and turns RFC 9457 problem details into `ApiError`.
+  `/api/v1` base path, the bearer token and turns RFC 9457 problem details into `ApiError`
+  (`isProblem` checks its `type` and `code`).
+  - `session.ts` keeps the access token only in memory and notifies subscribers (ADR-0011).
+  - `refreshSession.ts` renews it with the `HttpOnly` refresh cookie: a single renewal in flight,
+    serialized across tabs with the Web Locks API, because the backend rotates the refresh token
+    and treats a reused one as theft (ADR-0009).
+  - A 401 triggers one renewal and one retry; a token close to its expiry is renewed first.
+    Requests with `{ authenticated: false }` (the `/auth/**` endpoints) never send `Authorization`.
 - `core/audio`: in-browser voice engine and audiobook assembly, with `ports/`,
   `adapters/` (WebAssembly, Web Worker) and `services/` (created with HU-14 and HU-15).
 - `core/storage`: IndexedDB behind an interface (created when the first story needs it).
