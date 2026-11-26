@@ -27,3 +27,8 @@ management:
     health:
       probes:
         enabled: true
+podcuaderno:
+  security:
+    # Base64 HMAC key of at least 32 bytes. Optional: without it a random key is generated at startup (ADR-0009).
+    jwt-secret: ${JWT_SECRET:}
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}

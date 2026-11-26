@@ -62,4 +62,13 @@ class PodcuadernoApplicationTests {
     void openApiDocumentIsPublic() {
         assertThat(mvc.get().uri("/v3/api-docs")).hasStatusOk();
     }
+
+    @Test
+    void openApiDocumentDescribesTheBearerScheme() {
+        assertThat(mvc.get().uri("/v3/api-docs"))
+                .hasStatusOk()
+                .bodyJson()
+                .extractingPath("$.components.securitySchemes.bearerAuth.scheme")
+                .isEqualTo("bearer");
+    }
 }

@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @WebMvcTest
-@Import({SecurityConfiguration.class, GlobalExceptionHandlerTests.ThrowingController.class})
+@Import({SecurityConfiguration.class, JwtConfiguration.class, GlobalExceptionHandlerTests.ThrowingController.class})
 class GlobalExceptionHandlerTests {
 
     @Autowired
