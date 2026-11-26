@@ -80,7 +80,20 @@ jobs:
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
+      # Full stack (nginx, backend, PostgreSQL and Mailpit) so the suite covers the real flow.
+      - name: Start the full stack
+        working-directory: .
+        run: docker compose up -d --build --wait --wait-timeout 300
       - run: pnpm test:e2e
+        env:
+          E2E_BASE_URL: http://localhost:3000
+          MAILPIT_URL: http://localhost:8025
+      - if: failure()
+        working-directory: .
+        run: docker compose logs
+      - if: always()
+        working-directory: .
+        run: docker compose down -v
       - if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
