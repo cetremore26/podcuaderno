@@ -54,6 +54,11 @@ class ArchitectureRulesSelfTests {
     }
 
     @Test
+    void cleanLayersDetectsUnregisteredAdapterPackages() {
+        assertViolation(DependencyRules.cleanLayers, "RogueAdapter");
+    }
+
+    @Test
     void noFieldInjectionDetectsAutowiredFields() {
         assertViolation(DependencyRules.noFieldInjection, "FieldInjectedController");
     }

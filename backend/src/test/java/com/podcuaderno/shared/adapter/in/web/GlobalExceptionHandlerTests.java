@@ -2,14 +2,18 @@ package com.podcuaderno.shared.adapter.in.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.podcuaderno.shared.domain.exception.AuthenticationFailedException;
 import com.podcuaderno.shared.domain.exception.BusinessRuleViolationException;
+import com.podcuaderno.shared.domain.exception.RateLimitExceededException;
 import com.podcuaderno.shared.domain.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -44,6 +48,47 @@ class GlobalExceptionHandlerTests {
 
         assertProblem(result, HttpStatus.UNPROCESSABLE_CONTENT, "/errors/business-rule");
         assertThat(result).bodyJson().extractingPath("$.detail").isEqualTo("position is out of range");
+        assertThat(result).bodyJson().extractingPath("$.code").isEqualTo("business-rule");
+    }
+
+    @Test
+    @WithMockUser
+    void businessRuleViolationExposesItsOwnCode() {
+        MvcTestResult result = mvc.get().uri("/test/coded-business-rule").exchange();
+
+        assertProblem(result, HttpStatus.UNPROCESSABLE_CONTENT, "/errors/business-rule");
+        assertThat(result).bodyJson().extractingPath("$.code").isEqualTo("invalid-title");
+    }
+
+    @Test
+    @WithMockUser
+    void authenticationFailureIsMappedTo401WithAGenericDetail() {
+        MvcTestResult result = mvc.get().uri("/test/authentication-failed").exchange();
+
+        assertProblem(result, HttpStatus.UNAUTHORIZED, "/errors/unauthenticated");
+        assertThat(result)
+                .bodyJson()
+                .extractingPath("$.detail")
+                .isEqualTo("The credentials or the session are not valid.");
+        assertThat(result).bodyText().doesNotContain("wrong password for ana");
+    }
+
+    @Test
+    @WithMockUser
+    void rateLimitIsMappedTo429WithRetryAfterRoundedUpToSeconds() {
+        MvcTestResult result = mvc.get().uri("/test/rate-limit").exchange();
+
+        assertProblem(result, HttpStatus.TOO_MANY_REQUESTS, "/errors/rate-limit");
+        assertThat(result).hasHeader(HttpHeaders.RETRY_AFTER, "91");
+        assertThat(result).bodyJson().extractingPath("$.retryAfterSeconds").isEqualTo(91);
+    }
+
+    @Test
+    @WithMockUser
+    void rateLimitNeverAsksToWaitLessThanOneSecond() {
+        MvcTestResult result = mvc.get().uri("/test/rate-limit-elapsed").exchange();
+
+        assertThat(result).hasHeader(HttpHeaders.RETRY_AFTER, "1");
     }
 
     @Test
@@ -94,6 +139,26 @@ class GlobalExceptionHandlerTests {
             throw new SampleRuleViolationException();
         }
 
+        @GetMapping("/coded-business-rule")
+        void codedBusinessRule() {
+            throw new SampleCodedRuleViolationException();
+        }
+
+        @GetMapping("/authentication-failed")
+        void authenticationFailed() {
+            throw new SampleAuthenticationFailedException();
+        }
+
+        @GetMapping("/rate-limit")
+        void rateLimit() {
+            throw new SampleRateLimitExceededException(Duration.ofSeconds(90).plusMillis(1));
+        }
+
+        @GetMapping("/rate-limit-elapsed")
+        void rateLimitElapsed() {
+            throw new SampleRateLimitExceededException(Duration.ZERO);
+        }
+
         @PostMapping("/validation")
         void validation(@Valid @RequestBody SampleRequest request) {
             // Never reached: validation fails before.
@@ -116,6 +181,24 @@ class GlobalExceptionHandlerTests {
     static class SampleRuleViolationException extends BusinessRuleViolationException {
         SampleRuleViolationException() {
             super("position is out of range");
+        }
+    }
+
+    static class SampleCodedRuleViolationException extends BusinessRuleViolationException {
+        SampleCodedRuleViolationException() {
+            super("invalid-title", "title must have between 1 and 150 characters");
+        }
+    }
+
+    static class SampleAuthenticationFailedException extends AuthenticationFailedException {
+        SampleAuthenticationFailedException() {
+            super("wrong password for ana");
+        }
+    }
+
+    static class SampleRateLimitExceededException extends RateLimitExceededException {
+        SampleRateLimitExceededException(Duration retryAfter) {
+            super("too many attempts", retryAfter);
         }
     }
 }
