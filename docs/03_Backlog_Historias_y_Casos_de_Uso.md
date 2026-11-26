@@ -1,7 +1,7 @@
 # Backlog, historias de usuario y casos de uso
 
 **Proyecto:** Podcuaderno
-**Versión:** 0.4 (borrador)
+**Versión:** 0.5 (borrador)
 **Fecha:** 26 de noviembre de 2026
 **Autor:** Sebastián
 
@@ -74,6 +74,7 @@
 - Cuando creo un cuaderno, entonces aparece en mi lista ordenada por última modificación.
 - Dado un cuaderno de otro usuario, cuando intento acceder a su ID por la API, entonces recibo 404 (no 403, para no revelar que existe).
 - Cuando elimino un cuaderno, entonces se pide confirmación y se borran sus temas y conceptos.
+- Alcance: en esta historia el cuaderno se crea vacío, solo con su título. La creación con la estructura importada (CU-03) llega con HU-07.
 
 **HU-07 · Importar texto, TXT y Markdown** · M · 5 pts · RF-06
 > Como **estudiante**, quiero pegar mis apuntes o subir un archivo de texto, para no tener que copiarlos uno por uno.
@@ -383,3 +384,4 @@ flowchart LR
 | 0.2 | 25 de noviembre de 2026 | Reescrito para la aplicación web freemium. |
 | 0.3 | 26 de noviembre de 2026 | HU-25 y Definición de Terminado incluyen las pruebas de arquitectura. |
 | 0.4 | 26 de noviembre de 2026 | Gitflow: la Definición de Terminado y HU-25 se refieren a `develop` (ADR-0006). |
+| 0.5 | 26 de noviembre de 2026 | HU-06 aclara que el cuaderno se crea por título; la estructura importada llega con HU-07. Bocetos del Sprint 1 en [`bocetos/sprint-1.md`](bocetos/sprint-1.md). |

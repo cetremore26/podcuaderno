@@ -2,7 +2,7 @@
 
 **Proyecto:** Podcuaderno
 **Documento:** Arquitectura de software, diseño y estándares de código
-**Versión:** 0.2 (borrador)
+**Versión:** 0.3 (borrador)
 **Fecha:** 26 de noviembre de 2026
 **Autor:** Sebastián
 
@@ -140,8 +140,7 @@ com.podcuaderno.notebooks
 │   │   │   ├── CreateNotebookUseCase.java
 │   │   │   └── MoveConceptUseCase.java
 │   │   └── out                    ← lo que la aplicación necesita del exterior
-│   │       ├── NotebookRepository.java
-│   │       └── DomainEventPublisher.java
+│   │       └── NotebookRepository.java
 │   └── service                    ← implementación de los casos de uso
 │       ├── CreateNotebookService.java
 │       └── MoveConceptService.java
@@ -152,6 +151,10 @@ com.podcuaderno.notebooks
     └── out
         └── persistence            ← entidades JPA, repositorios Spring Data, mappers
 ```
+
+Notas (ADR-0010):
+- El puerto `DomainEventPublisher` no se repite en cada módulo: vive en `shared.application.port.out` y lo implementa `shared.adapter.out.event.SpringDomainEventPublisher`.
+- Además de `adapter.out.persistence`, los adaptadores de salida pueden vivir en `adapter.out.email` (envío de correo) y `adapter.out.security` (hash de contraseñas, firma de tokens, límite de intentos). Son los únicos paquetes de adaptadores que reconoce ArchUnit; uno nuevo exige ampliar la regla `cleanLayers`.
 
 ### 5.3 Responsabilidades y reglas por capa
 
@@ -299,12 +302,15 @@ El módulo `importing` no conoce a `notebooks`: devuelve una vista previa y es e
 |---|---|---|
 | Datos con formato inválido | 400 | `/errors/validation` |
 | No autenticado o token vencido | 401 | `/errors/unauthenticated` |
+| Credenciales o sesión inválidas (inicio de sesión fallido, refresh token inválido) | 401 | `/errors/unauthenticated` (mensaje genérico) |
 | Recurso inexistente o de otro usuario | 404 | `/errors/not-found` |
-| Regla de negocio violada (por ejemplo, posición inválida) | 422 | `/errors/business-rule` |
-| Demasiadas peticiones | 429 | `/errors/rate-limit` |
+| Regla de negocio violada (por ejemplo, posición inválida) | 422 | `/errors/business-rule`, con la propiedad `code` |
+| Demasiadas peticiones | 429 | `/errors/rate-limit`, con la cabecera `Retry-After` y la propiedad `retryAfterSeconds` |
 | Error inesperado | 500 | `/errors/internal` (se registra con un ID de correlación) |
 
 El `title` y el `detail` de los Problem Details van en inglés porque los consume el frontend; la interfaz muestra al usuario un mensaje en español según el `type`.
+
+Las reglas de negocio llevan además una propiedad `code` (por defecto `business-rule`) para que el frontend distinga los casos sin leer el `detail`: por ejemplo `email-not-verified`, `invalid-verification-token`, `outdated-privacy-policy`, `invalid-email`, `invalid-password` e `invalid-title`.
 
 ### 5.7 Validación en tres niveles
 
@@ -316,6 +322,8 @@ El `title` y el `detail` de los Problem Details van en inglés porque los consum
 
 - Spring Security vive en `shared` (adaptador). Los casos de uso reciben un `UserId`, nunca objetos de Spring Security.
 - JWT de acceso de corta duración y refresh token en cookie `HttpOnly` (ver RNF-01 en el documento 02).
+- Resumen de [ADR-0009](adr/0009-autenticacion-y-sesiones.md): contraseñas con Argon2id; token de acceso JWT HS256 de 15 minutos; refresh token opaco de 14 días, guardado como hash SHA-256, que rota en cada renovación y revoca toda su familia si se reutiliza; cookie `pc_refresh` con `HttpOnly`, `Secure`, `SameSite=Strict` y `Path=/api/v1/auth`; CORS con lista blanca; 5 intentos fallidos en 15 minutos por correo y luego 429; respuestas genéricas que no revelan si un correo está registrado.
+- Los controladores reciben el usuario como `@AuthenticationPrincipal AuthenticatedUser user` (`record AuthenticatedUser(UserId id)`, en `shared`) y pasan `user.id()` al caso de uso.
 - Los logs nunca incluyen contraseñas, tokens ni contenido de los apuntes.
 
 ### 5.9 Persistencia
@@ -538,7 +546,11 @@ Configuración de Spring Modulith (ADR-0008): `shared` es un módulo abierto (`O
 | Texto para audio | `spokenText` |
 | Usuario | `User` |
 | Consentimiento | `Consent` |
+| Enlace de verificación de correo | `EmailVerificationToken` |
+| Sesión renovable (refresh token) | `RefreshToken` |
+| Usuario autenticado en una petición | `AuthenticatedUser` |
 | Evento de uso | `UsageEvent` |
+| Tipo de evento de uso | `UsageEventType` |
 | Importación / vista previa | `Import` / `ImportPreview` |
 | Audiolibro | `Audiobook` |
 | Voz gratuita / premium | `BrowserVoiceEngine` / `PremiumVoiceEngine` |
@@ -555,8 +567,11 @@ Configuración de Spring Modulith (ADR-0008): `shared` es un módulo abierto (`O
 | [ADR-0006](adr/0006-flujo-de-trabajo-gitflow.md) | Flujo de trabajo Gitflow con `main` y `develop`. |
 | [ADR-0007](adr/0007-gradle-kotlin-dsl.md) | Gradle con Kotlin DSL para el backend. |
 | [ADR-0008](adr/0008-configuracion-spring-modulith.md) | Configuración de Spring Modulith: `shared` abierto, eventos como interfaz nombrada y registro de publicaciones con JPA. |
+| [ADR-0009](adr/0009-autenticacion-y-sesiones.md) | Autenticación y sesiones: Argon2id, JWT HS256, refresh token opaco con rotación y cookie `SameSite=Strict`. |
+| [ADR-0010](adr/0010-datos-y-eventos-entre-modulos.md) | Sin claves foráneas entre módulos; eventos con tipos de `shared`; `DomainEventPublisher` en `shared`. |
+| [ADR-0011](adr/0011-frontend-rutas-estilos-y-sesion.md) | Frontend: react-router en modo declarativo, CSS propio, `<dialog>` nativo y token en memoria. |
 
-Las decisiones pendientes (voz en el navegador, armado del M4B, hosting, licencia del código) se registrarán como ADR-0009 en adelante.
+Las decisiones pendientes (voz en el navegador, armado del M4B, hosting, licencia del código) se registrarán como ADR-0012 en adelante.
 
 ## Historial de versiones
 
@@ -564,3 +579,4 @@ Las decisiones pendientes (voz en el navegador, armado del M4B, hosting, licenci
 |---|---|---|
 | 0.1 | 26 de noviembre de 2026 | Versión inicial. |
 | 0.2 | 26 de noviembre de 2026 | Gitflow, Gradle y configuración de Modulith (ADR-0006 a ADR-0008); convenciones de nombres verificadas; JUnit Jupiter 6. |
+| 0.3 | 26 de noviembre de 2026 | Sprint 1: autenticación y sesiones, datos y eventos entre módulos, y frontend (ADR-0009 a ADR-0011); `code`, `Retry-After` y 401 de inicio de sesión en los errores; adaptadores de salida de correo y seguridad. |

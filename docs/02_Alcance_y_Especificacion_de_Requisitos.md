@@ -2,7 +2,7 @@
 
 **Proyecto:** Podcuaderno
 **Documento:** Especificación de requisitos de software (basada en ISO/IEC/IEEE 29148)
-**Versión:** 0.3 (borrador)
+**Versión:** 0.4 (borrador)
 **Fecha:** 25 de noviembre de 2026
 **Autor:** Sebastián
 
@@ -187,7 +187,7 @@ Prioridad MoSCoW: **M** obligatorio, **S** importante, **C** deseable. Versión:
 
 | ID | Categoría | Requisito | Cómo se verifica |
 |---|---|---|---|
-| RNF-01 | Seguridad | Contraseñas con hash bcrypt o Argon2; token de acceso JWT de corta duración (15 min) y refresh token en cookie `HttpOnly`, `Secure` y `SameSite`; HTTPS obligatorio; CORS limitado al dominio del frontend; límite de intentos de inicio de sesión; controles del OWASP Top 10:2025, en especial control de acceso por dueño del recurso. | Pruebas de seguridad automatizadas, OWASP ZAP, SonarQube. |
+| RNF-01 | Seguridad | Contraseñas con hash bcrypt o Argon2; token de acceso JWT de corta duración (15 min) y refresh token en cookie `HttpOnly`, `Secure` y `SameSite=Strict` (ADR-0009); HTTPS obligatorio; CORS limitado al dominio del frontend; límite de intentos de inicio de sesión; controles del OWASP Top 10:2025, en especial control de acceso por dueño del recurso. | Pruebas de seguridad automatizadas, OWASP ZAP, SonarQube. |
 | RNF-02 | Privacidad | Cumplir la Ley 1581 de 2012: política de tratamiento publicada, consentimiento al registrarse, derecho a consultar y eliminar los datos. Los apuntes no se comparten con terceros. | Revisión del flujo de registro y de eliminación de cuenta. |
 | RNF-03 | Costo | Operación de la v1.0 ≤ 10 USD al mes (propuesto). La voz gratuita no consume recursos del servidor. | Facturación del hosting. |
 | RNF-04 | Rendimiento | API: percentil 95 < 300 ms en operaciones de cuadernos. Frontend: LCP < 2,5 s en conexión 4G. Generación de voz: ver OE-2. | k6 o JMeter para la API; Lighthouse para el frontend. |
@@ -221,58 +221,88 @@ Prioridad MoSCoW: **M** obligatorio, **S** importante, **C** deseable. Versión:
 
 ## 7. Modelo de datos inicial (v1.0)
 
+Las tablas y columnas van en inglés (ADR-0005; ver el lenguaje ubicuo en el documento 05). Cada módulo es dueño de sus tablas y **no hay claves foráneas entre módulos** (ADR-0010): `notebooks.owner_id` y `usage_events.user_id` guardan el UUID del usuario sin referenciar `users`. Por eso el diagrama se divide por módulo; las líneas punteadas son referencias lógicas, no claves foráneas.
+
 ```mermaid
 erDiagram
-    USUARIO ||--o{ CUADERNO : posee
-    USUARIO ||--o{ CONSENTIMIENTO : acepta
-    CUADERNO ||--o{ TEMA : contiene
-    TEMA ||--o{ CONCEPTO : contiene
-    USUARIO ||--o{ EVENTO_USO : genera
+    users ||--o{ consents : "acepta"
+    users ||--o{ email_verification_tokens : "recibe"
+    users ||--o{ refresh_tokens : "abre sesiones"
+    users ||..o{ notebooks : "posee (sin FK)"
+    users ||..o{ usage_events : "genera (sin FK)"
+    notebooks ||--o{ topics : "contiene"
+    topics ||--o{ concepts : "contiene"
 
-    USUARIO {
+    users {
         uuid id PK
-        string correo UK
-        string hash_contrasena
-        boolean correo_verificado
-        string rol
-        timestamp creado_en
+        string email UK
+        string password_hash
+        string status "PENDING_VERIFICATION o ACTIVE"
+        string role "STUDENT o ADMIN"
+        timestamp created_at
+        timestamp email_verified_at
     }
-    CONSENTIMIENTO {
+    consents {
         uuid id PK
-        uuid usuario_id FK
-        string version_politica
-        timestamp aceptado_en
+        uuid user_id FK
+        string policy_version
+        timestamp accepted_at
     }
-    CUADERNO {
+    email_verification_tokens {
         uuid id PK
-        uuid usuario_id FK
-        string titulo
-        timestamp actualizado_en
+        uuid user_id FK
+        string token_hash UK
+        timestamp created_at
+        timestamp expires_at
+        timestamp used_at
     }
-    TEMA {
+    refresh_tokens {
         uuid id PK
-        uuid cuaderno_id FK
-        int orden
-        string titulo
+        uuid user_id FK
+        uuid family_id
+        string token_hash UK
+        timestamp created_at
+        timestamp expires_at
+        timestamp rotated_at
+        timestamp revoked_at
     }
-    CONCEPTO {
+    notebooks {
         uuid id PK
-        uuid tema_id FK
-        int orden
-        string titulo
-        text texto
-        text texto_audio
+        uuid owner_id
+        string title
+        timestamp created_at
+        timestamp updated_at
     }
-    EVENTO_USO {
+    topics {
         uuid id PK
-        uuid usuario_id FK
-        string tipo
-        int caracteres
-        timestamp ocurrido_en
+        uuid notebook_id FK
+        int position
+        string title
+    }
+    concepts {
+        uuid id PK
+        uuid topic_id FK
+        int position
+        string title
+        text text
+        text spoken_text
+    }
+    usage_events {
+        uuid id PK
+        uuid user_id
+        string type
+        int characters
+        timestamp occurred_at
     }
 ```
 
-El modelo usa los términos del negocio; en el código, las clases y tablas van en inglés (ADR-0005; ver el lenguaje ubicuo en el documento 05). `EVENTO_USO` guarda solo el tipo de evento (por ejemplo, "audiolibro generado") y la cantidad de caracteres, nunca el contenido. Es la base de las métricas de OE-5 y de los límites de la v2.
+| Módulo | Tablas | Notas |
+|---|---|---|
+| `identity` | `users`, `consents`, `email_verification_tokens`, `refresh_tokens` | La cuenta queda `PENDING_VERIFICATION` hasta confirmar el correo (`email_verified_at`). Los tokens de verificación y de sesión se guardan solo como hash SHA-256 (ADR-0009). |
+| `notebooks` | `notebooks`, `topics`, `concepts` | Borrar un cuaderno borra en cascada sus temas y conceptos. `spoken_text` (texto para audio) llega con HU-12. |
+| `metrics` | `usage_events` | Solo el tipo de evento y la cantidad de caracteres, nunca el contenido. |
+
+`usage_events` guarda solo el tipo de evento (por ejemplo, "audiolibro generado") y la cantidad de caracteres, nunca el contenido. Es la base de las métricas de OE-5 y de los límites de la v2. Al eliminar una cuenta (HU-04), cada módulo borra sus datos al recibir el evento `UserDeleted`.
 
 ## 8. Trazabilidad
 
@@ -299,3 +329,4 @@ El modelo usa los términos del negocio; en el código, las clases y tablas van 
 | 0.1 | 25 de noviembre de 2026 | Requisitos de la herramienta de línea de comandos. |
 | 0.2 | 25 de noviembre de 2026 | Reescrito para la aplicación web freemium con Java + React. |
 | 0.3 | 26 de noviembre de 2026 | Arquitectura definida: Clean Architecture por módulo, nombres de módulos en inglés, RNF-09 con verificación automática. |
+| 0.4 | 26 de noviembre de 2026 | Modelo de datos en inglés y por módulo, sin claves foráneas entre módulos (ADR-0010); `status` y `email_verified_at` en lugar de `correo_verificado`; tablas de tokens de verificación y de sesión; `SameSite=Strict` en RNF-01 (ADR-0009). |
