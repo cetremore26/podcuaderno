@@ -1,16 +1,23 @@
 package com.podcuaderno.shared.adapter.in.web;
 
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
-/** Stateless security for the JSON API: health and API docs are public, everything else requires authentication. */
+/**
+ * Stateless security for the JSON API (ADR-0009): health, API docs and the authentication endpoints are public;
+ * everything else requires a bearer access token.
+ */
 @Configuration(proxyBeanMethods = false)
+@EnableConfigurationProperties(SecurityProperties.class)
 class SecurityConfiguration {
 
     private static final String[] PUBLIC_ENDPOINTS = {
@@ -27,19 +34,26 @@ class SecurityConfiguration {
     SecurityFilterChain securityFilterChain(
             HttpSecurity http, @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver)
             throws Exception {
+        // Delegates to GlobalExceptionHandler so 401 responses are Problem Details too.
+        AuthenticationEntryPoint problemEntryPoint = (request, response, exception) ->
+                exceptionResolver.resolveException(request, response, null, exception);
         return http
-                // Stateless JSON API; CSRF is revisited when the refresh-token cookie arrives (HU-02).
+                // Bearer tokens for the API; the refresh cookie is SameSite=Strict and limited to /api/v1/auth
+                // (ADR-0009).
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth.requestMatchers(PUBLIC_ENDPOINTS)
                         .permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/**")
+                        .permitAll()
                         .anyRequest()
                         .authenticated())
-                // Delegates to GlobalExceptionHandler so 401 responses are Problem Details too.
-                .exceptionHandling(errors -> errors.authenticationEntryPoint((request, response, exception) ->
-                        exceptionResolver.resolveException(request, response, null, exception)))
+                .oauth2ResourceServer(resourceServer -> resourceServer
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(new AuthenticatedUserConverter()))
+                        .authenticationEntryPoint(problemEntryPoint))
+                .exceptionHandling(errors -> errors.authenticationEntryPoint(problemEntryPoint))
                 .build();
     }
 }
