@@ -32,6 +32,7 @@ final class DependencyRules {
                     "tools.jackson..")
             .allowEmptyShould(true);
 
+    /** Every outbound adapter package must be declared here, or the application layer rejects it (ADR-0010). */
     @ArchTest
     static final ArchRule cleanLayers = onionArchitecture()
             .domainModels("..domain..")
@@ -39,6 +40,9 @@ final class DependencyRules {
             .adapter("web", "..adapter.in.web..")
             .adapter("events", "..adapter.in.event..")
             .adapter("persistence", "..adapter.out.persistence..")
+            .adapter("eventPublishing", "..adapter.out.event..")
+            .adapter("email", "..adapter.out.email..")
+            .adapter("security", "..adapter.out.security..")
             .withOptionalLayers(true)
             .allowEmptyShould(true);
 
