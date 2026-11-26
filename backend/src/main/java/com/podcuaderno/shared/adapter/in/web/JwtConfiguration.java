@@ -26,6 +26,7 @@ class JwtConfiguration {
     private static final Logger log = LoggerFactory.getLogger(JwtConfiguration.class);
     private static final int MIN_KEY_BYTES = 32;
     private static final String HMAC_SHA256 = "HmacSHA256";
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     @Bean
     SecretKey accessTokenSigningKey(SecurityProperties properties) {
@@ -33,7 +34,7 @@ class JwtConfiguration {
         if (secret == null || secret.isBlank()) {
             log.warn("No JWT secret configured; using a random key. Access tokens will not survive a restart.");
             byte[] random = new byte[MIN_KEY_BYTES];
-            new SecureRandom().nextBytes(random);
+            RANDOM.nextBytes(random);
             return new SecretKeySpec(random, HMAC_SHA256);
         }
         byte[] decoded = Base64.getDecoder().decode(secret.strip());
