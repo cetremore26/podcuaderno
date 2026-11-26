@@ -59,6 +59,14 @@ class PodcuadernoApplicationTests {
     }
 
     @Test
+    void openApiDocumentListsTheAuthenticationEndpoints() {
+        assertThat(mvc.get().uri("/v3/api-docs"))
+                .hasStatusOk()
+                .bodyText()
+                .contains("/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout");
+    }
+
+    @Test
     void openApiDocumentDescribesTheBearerScheme() {
         assertThat(mvc.get().uri("/v3/api-docs"))
                 .hasStatusOk()

@@ -75,6 +75,34 @@ class RefreshTokenTests {
     }
 
     @Test
+    void rotatingKeepsTheFamilyAndRetiresTheOldToken() {
+        RefreshToken current = RefreshToken.issue(UserId.newId(), HASH, NOW);
+        Instant later = NOW.plus(Duration.ofDays(3));
+        TokenHash newHash = TokenHash.of("next");
+
+        RefreshToken next = current.rotate(newHash, later);
+
+        assertThat(current.wasRotated()).isTrue();
+        assertThat(current.rotatedAt()).contains(later);
+        assertThat(current.isUsable(later)).isFalse();
+        assertThat(next.id()).isNotEqualTo(current.id());
+        assertThat(next.familyId()).isEqualTo(current.familyId());
+        assertThat(next.userId()).isEqualTo(current.userId());
+        assertThat(next.tokenHash()).isEqualTo(newHash);
+        assertThat(next.expiresAt()).isEqualTo(later.plus(RefreshToken.TIME_TO_LIVE));
+        assertThat(next.isUsable(later)).isTrue();
+    }
+
+    @Test
+    void anUnusableTokenCannotBeRotated() {
+        RefreshToken current = RefreshToken.issue(UserId.newId(), HASH, NOW);
+        current.rotate(TokenHash.of("next"), NOW.plusSeconds(1));
+
+        assertThatThrownBy(() -> current.rotate(TokenHash.of("again"), NOW.plusSeconds(2)))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
     void accessTokensLive15Minutes() {
         assertThat(AccessTokenPolicy.TIME_TO_LIVE).isEqualTo(Duration.ofMinutes(15));
     }

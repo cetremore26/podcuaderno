@@ -68,6 +68,19 @@ public final class RefreshToken {
         return new RefreshToken(id, userId, familyId, tokenHash, createdAt, expiresAt, rotatedAt, revokedAt);
     }
 
+    /**
+     * Replaces this token with a new one of the same family. This token stays stored as rotated, so presenting it again
+     * reveals a theft.
+     */
+    public RefreshToken rotate(TokenHash newTokenHash, Instant now) {
+        if (!isUsable(now)) {
+            throw new IllegalStateException("Only a usable refresh token can be rotated");
+        }
+        rotatedAt = now;
+        return new RefreshToken(
+                RefreshTokenId.newId(), userId, familyId, newTokenHash, now, now.plus(TIME_TO_LIVE), null, null);
+    }
+
     public boolean isUsable(Instant now) {
         return rotatedAt == null && revokedAt == null && now.isBefore(expiresAt);
     }
