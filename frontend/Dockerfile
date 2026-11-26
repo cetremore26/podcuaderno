@@ -5,6 +5,8 @@ RUN npm install -g pnpm@12.18.0
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* ./
 RUN pnpm install --frozen-lockfile --ignore-scripts
 COPY . .
+# Contact email shown on the privacy policy page; empty until it is published.
+ARG VITE_PRIVACY_CONTACT_EMAIL=""
 RUN pnpm build
 
 # Runs as the unprivileged "nginx" user (uid 101), so it listens on 8080 instead of 80.

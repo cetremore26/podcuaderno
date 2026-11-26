@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router';
+import { PrivacyPolicyPage } from '@/features/privacy';
 import { AppLayout } from './AppLayout';
 import { HomePage } from './HomePage';
 import { NotFoundPage } from './NotFoundPage';
@@ -9,6 +10,7 @@ export function AppRoutes() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route index element={<HomePage />} />
+        <Route path="politica-de-datos" element={<PrivacyPolicyPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

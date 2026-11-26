@@ -4,6 +4,15 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import { AppRoutes } from './AppRoutes';
 
 describe('AppRoutes', () => {
+  it('shows the privacy policy without a session', () => {
+    renderWithProviders(<AppRoutes />, { route: '/politica-de-datos' });
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Política de tratamiento de datos' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Versión 1\.0/)).toBeInTheDocument();
+  });
+
   it('shows the not found page for an unknown route', () => {
     renderWithProviders(<AppRoutes />, { route: '/no-existe' });
 
