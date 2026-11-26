@@ -1,6 +1,8 @@
 package com.podcuaderno.shared.adapter.in.web;
 
+import com.podcuaderno.shared.domain.exception.AuthenticationFailedException;
 import com.podcuaderno.shared.domain.exception.BusinessRuleViolationException;
+import com.podcuaderno.shared.domain.exception.RateLimitExceededException;
 import com.podcuaderno.shared.domain.exception.ResourceNotFoundException;
 import java.net.URI;
 import java.util.UUID;
@@ -39,11 +41,37 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(BusinessRuleViolationException.class)
     ProblemDetail handleBusinessRuleViolation(BusinessRuleViolationException ex) {
-        return problem(
+        ProblemDetail problem = problem(
                 HttpStatus.UNPROCESSABLE_CONTENT,
                 ProblemTypes.BUSINESS_RULE,
                 "Business rule violated",
                 ex.getMessage());
+        problem.setProperty("code", ex.code());
+        return problem;
+    }
+
+    @ExceptionHandler(AuthenticationFailedException.class)
+    ProblemDetail handleAuthenticationFailed(AuthenticationFailedException ex) {
+        // Generic detail: never reveal whether the email exists or which credential was wrong (ADR-0009).
+        return problem(
+                HttpStatus.UNAUTHORIZED,
+                ProblemTypes.UNAUTHENTICATED,
+                "Authentication failed",
+                "The credentials or the session are not valid.");
+    }
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    ResponseEntity<ProblemDetail> handleRateLimitExceeded(RateLimitExceededException ex) {
+        long seconds = Math.max(1, (ex.retryAfter().toMillis() + 999) / 1000);
+        ProblemDetail problem = problem(
+                HttpStatus.TOO_MANY_REQUESTS,
+                ProblemTypes.RATE_LIMIT,
+                "Too many requests",
+                "Too many attempts. Try again later.");
+        problem.setProperty("retryAfterSeconds", seconds);
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, Long.toString(seconds))
+                .body(problem);
     }
 
     @ExceptionHandler(AuthenticationException.class)

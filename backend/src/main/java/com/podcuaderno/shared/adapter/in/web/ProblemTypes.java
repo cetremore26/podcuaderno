@@ -9,6 +9,7 @@ public final class ProblemTypes {
     public static final URI UNAUTHENTICATED = URI.create("/errors/unauthenticated");
     public static final URI NOT_FOUND = URI.create("/errors/not-found");
     public static final URI BUSINESS_RULE = URI.create("/errors/business-rule");
+    public static final URI RATE_LIMIT = URI.create("/errors/rate-limit");
     public static final URI INTERNAL = URI.create("/errors/internal");
 
     private ProblemTypes() {}
