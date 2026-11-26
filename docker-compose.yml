@@ -1,0 +1,57 @@
+name: podcuaderno
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-podcuaderno}
+      POSTGRES_USER: ${POSTGRES_USER:-podcuaderno}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-podcuaderno}
+    ports: ["${POSTGRES_PORT:-5432}:5432"]
+    volumes: [postgres-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+  mailpit:
+    image: axllent/mailpit:v1.34
+    ports: ["${MAILPIT_UI_PORT:-8025}:8025", "${MAILPIT_SMTP_PORT:-1025}:1025"]
+    # The image ships its own HEALTHCHECK (/mailpit readyz).
+  backend:
+    build: ./backend
+    environment:
+      DB_HOST: postgres
+      DB_NAME: ${POSTGRES_DB:-podcuaderno}
+      DB_USER: ${POSTGRES_USER:-podcuaderno}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-podcuaderno}
+      SPRING_MAIL_HOST: mailpit # used from HU-01 on
+      SPRING_MAIL_PORT: 1025
+      LOGGING_STRUCTURED_FORMAT_CONSOLE: ecs # JSON logs (RNF-12)
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+    ports: ["${BACKEND_PORT:-8080}:8080"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      mailpit: { condition: service_started }
+    healthcheck:
+      # The JRE image ships neither curl nor wget, so the probe uses bash /dev/tcp.
+      test:
+        [
+          "CMD-SHELL",
+          "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8080 && printf \"GET /actuator/health/readiness HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q UP <&3'",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+  frontend:
+    build: ./frontend
+    ports: ["${FRONTEND_PORT:-3000}:80"]
+    depends_on:
+      backend: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+volumes:
+  postgres-data:

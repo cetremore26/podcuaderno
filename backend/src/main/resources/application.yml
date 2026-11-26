@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: podcuaderno
+  autoconfigure:
+    # No generated in-memory user nor logged test password; real users arrive with HU-01.
+    exclude:
+      - org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+  datasource:
+    # Local development defaults; docker compose and production override them.
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:podcuaderno}
+    username: ${DB_USER:podcuaderno}
+    password: ${DB_PASSWORD:podcuaderno}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  modulith:
+    events:
+      republish-outstanding-events-on-restart: true
+      completion-mode: delete
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      probes:
+        enabled: true
