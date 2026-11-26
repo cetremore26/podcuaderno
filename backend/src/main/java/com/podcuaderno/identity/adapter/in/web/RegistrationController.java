@@ -1,6 +1,7 @@
 package com.podcuaderno.identity.adapter.in.web;
 
 import com.podcuaderno.identity.application.port.in.RegisterUserUseCase;
+import com.podcuaderno.identity.application.port.in.VerifyEmailUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -16,9 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 class RegistrationController {
 
     private final RegisterUserUseCase registerUser;
+    private final VerifyEmailUseCase verifyEmail;
 
-    RegistrationController(RegisterUserUseCase registerUser) {
+    RegistrationController(RegisterUserUseCase registerUser, VerifyEmailUseCase verifyEmail) {
         this.registerUser = registerUser;
+        this.verifyEmail = verifyEmail;
     }
 
     @PostMapping("/registrations")
@@ -28,5 +31,14 @@ class RegistrationController {
     ResponseEntity<Void> register(@Valid @RequestBody RegistrationRequest body) {
         registerUser.register(body.toCommand());
         return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/email-verifications/confirmations")
+    @Operation(
+            summary = "Activate an account with the token of the verification link",
+            description = "Confirming an already used link of an active account answers 204 again.")
+    ResponseEntity<Void> confirm(@Valid @RequestBody EmailConfirmationRequest body) {
+        verifyEmail.verify(body.toCommand());
+        return ResponseEntity.noContent().build();
     }
 }
