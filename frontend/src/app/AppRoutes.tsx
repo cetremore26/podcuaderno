@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router';
+import { CheckEmailPage, RegisterPage } from '@/features/auth';
 import { PrivacyPolicyPage } from '@/features/privacy';
 import { AppLayout } from './AppLayout';
 import { HomePage } from './HomePage';
@@ -10,6 +11,8 @@ export function AppRoutes() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route index element={<HomePage />} />
+        <Route path="registro" element={<RegisterPage />} />
+        <Route path="registro/revisa-tu-correo" element={<CheckEmailPage />} />
         <Route path="politica-de-datos" element={<PrivacyPolicyPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
