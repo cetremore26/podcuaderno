@@ -67,9 +67,8 @@ class LoginIntegrationTests {
         assertThat(result).hasStatusOk();
         assertThat(result.getResponse().getHeader(HttpHeaders.SET_COOKIE)).startsWith("pc_refresh=");
         String accessToken = JsonPath.read(result.getResponse().getContentAsString(), "$.accessToken");
-        // No notebook endpoint yet: anything but 401 proves the token is accepted.
         assertThat(mvc.get().uri("/api/v1/notebooks").header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
-                .hasStatus(HttpStatus.NOT_FOUND);
+                .hasStatusOk();
         Integer refreshTokens = jdbc.queryForObject(
                 "select count(*) from refresh_tokens r join users u on u.id = r.user_id where u.email = ?",
                 Integer.class,
