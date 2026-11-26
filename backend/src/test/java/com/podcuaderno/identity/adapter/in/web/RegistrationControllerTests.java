@@ -8,6 +8,11 @@ import static org.mockito.Mockito.verify;
 
 import com.podcuaderno.identity.application.port.in.RegisterUserCommand;
 import com.podcuaderno.identity.application.port.in.RegisterUserUseCase;
+import com.podcuaderno.identity.application.port.in.ResendEmailVerificationCommand;
+import com.podcuaderno.identity.application.port.in.ResendEmailVerificationUseCase;
+import com.podcuaderno.identity.application.port.in.VerifyEmailCommand;
+import com.podcuaderno.identity.application.port.in.VerifyEmailUseCase;
+import com.podcuaderno.identity.domain.exception.InvalidVerificationTokenException;
 import com.podcuaderno.identity.domain.exception.OutdatedPrivacyPolicyException;
 import com.podcuaderno.shared.adapter.in.web.ApiSecurityTestConfiguration;
 import org.junit.jupiter.api.Test;
@@ -35,9 +40,19 @@ class RegistrationControllerTests {
     @MockitoBean
     private RegisterUserUseCase registerUser;
 
+    @MockitoBean
+    private VerifyEmailUseCase verifyEmail;
+
+    @MockitoBean
+    private ResendEmailVerificationUseCase resendEmailVerification;
+
     private MvcTestResult post(String body) {
+        return post("/api/v1/auth/registrations", body);
+    }
+
+    private MvcTestResult post(String uri, String body) {
         return mvc.post()
-                .uri("/api/v1/auth/registrations")
+                .uri(uri)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body)
                 .exchange();
@@ -85,5 +100,47 @@ class RegistrationControllerTests {
 
         assertThat(result).hasStatus(HttpStatus.UNPROCESSABLE_CONTENT);
         assertThat(result).bodyJson().extractingPath("$.code").isEqualTo("outdated-privacy-policy");
+    }
+
+    @Test
+    void confirmsAnEmailWithoutABody() {
+        MvcTestResult result = post("/api/v1/auth/email-verifications/confirmations", "{\"token\": \"abc\"}");
+
+        assertThat(result).hasStatus(HttpStatus.NO_CONTENT);
+        verify(verifyEmail).verify(new VerifyEmailCommand("abc"));
+    }
+
+    @Test
+    void rejectsAnInvalidVerificationTokenWithItsCode() {
+        doThrow(new InvalidVerificationTokenException()).when(verifyEmail).verify(any());
+
+        MvcTestResult result = post("/api/v1/auth/email-verifications/confirmations", "{\"token\": \"abc\"}");
+
+        assertThat(result).hasStatus(HttpStatus.UNPROCESSABLE_CONTENT);
+        assertThat(result).bodyJson().extractingPath("$.code").isEqualTo("invalid-verification-token");
+    }
+
+    @Test
+    void rejectsAConfirmationWithoutToken() {
+        MvcTestResult result = post("/api/v1/auth/email-verifications/confirmations", "{\"token\": \"\"}");
+
+        assertThat(result).hasStatus(HttpStatus.BAD_REQUEST);
+        verify(verifyEmail, never()).verify(any());
+    }
+
+    @Test
+    void acceptsAResendRequest() {
+        MvcTestResult result = post("/api/v1/auth/email-verifications", "{\"email\": \"ana@correo.com\"}");
+
+        assertThat(result).hasStatus(HttpStatus.ACCEPTED);
+        verify(resendEmailVerification).resend(new ResendEmailVerificationCommand("ana@correo.com"));
+    }
+
+    @Test
+    void rejectsAResendRequestWithAMalformedEmail() {
+        MvcTestResult result = post("/api/v1/auth/email-verifications", "{\"email\": \"ana\"}");
+
+        assertThat(result).hasStatus(HttpStatus.BAD_REQUEST);
+        verify(resendEmailVerification, never()).resend(any());
     }
 }
