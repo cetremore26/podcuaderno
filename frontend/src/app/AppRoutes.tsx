@@ -1,5 +1,12 @@
 import { Route, Routes } from 'react-router';
-import { CheckEmailPage, LoginPage, RegisterPage, VerifyEmailPage } from '@/features/auth';
+import {
+  CheckEmailPage,
+  LoginPage,
+  RegisterPage,
+  RequireSession,
+  VerifyEmailPage,
+} from '@/features/auth';
+import { NotebooksPage } from '@/features/notebooks';
 import { PrivacyPolicyPage } from '@/features/privacy';
 import { AppLayout } from './AppLayout';
 import { HomePage } from './HomePage';
@@ -15,6 +22,9 @@ export function AppRoutes() {
         <Route path="registro/revisa-tu-correo" element={<CheckEmailPage />} />
         <Route path="verificar-correo" element={<VerifyEmailPage />} />
         <Route path="iniciar-sesion" element={<LoginPage />} />
+        <Route element={<RequireSession />}>
+          <Route path="cuadernos" element={<NotebooksPage />} />
+        </Route>
         <Route path="politica-de-datos" element={<PrivacyPolicyPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
