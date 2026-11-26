@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.podcuaderno"
-version = "0.0.1-SNAPSHOT"
+version = "0.0.1"
 description = "Podcuaderno API"
 
 java { toolchain { languageVersion = JavaLanguageVersion.of(25) } }
