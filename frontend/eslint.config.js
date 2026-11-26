@@ -5,6 +5,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import { reactRefresh } from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import { architectureRules } from './eslint.architecture.js';
 
 export default defineConfig([
   globalIgnores(['dist', 'coverage', 'playwright-report', 'test-results']),
@@ -22,5 +23,6 @@ export default defineConfig([
     files: ['*.config.{js,ts}', 'eslint.*.js', 'e2e/**/*.ts', 'tests/**/*.ts'],
     languageOptions: { globals: globals.node },
   },
+  ...architectureRules,
   prettier,
 ]);
