@@ -38,7 +38,7 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: node
         update-types: ["version-update:semver-major"]
-      - dependency-name: nginx
+      - dependency-name: nginxinc/nginx-unprivileged
         update-types: ["version-update:semver-major"]
   - package-ecosystem: docker-compose
     directory: /
