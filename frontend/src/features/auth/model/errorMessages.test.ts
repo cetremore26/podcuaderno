@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ApiError } from '@/core/http/apiError';
 import {
   isInvalidVerificationLink,
+  loginErrorMessage,
   NETWORK_ERROR_MESSAGE,
   registrationErrorMessage,
   resendErrorMessage,
@@ -44,5 +45,22 @@ describe('auth error messages', () => {
       ),
     ).toBe(true);
     expect(isInvalidVerificationLink(serverError)).toBe(false);
+  });
+
+  it('explains a failed login, rounding the wait up to whole minutes', () => {
+    const rateLimited = (retryAfterSeconds?: number) =>
+      new ApiError({
+        type: '/errors/rate-limit',
+        title: 'Too many',
+        status: 429,
+        retryAfterSeconds,
+      });
+
+    expect(loginErrorMessage(rateLimited(30))).toContain('Espera 1 minuto y');
+    expect(loginErrorMessage(rateLimited(61))).toContain('Espera 2 minutos y');
+    expect(loginErrorMessage(rateLimited())).toContain('Espera 15 minutos y');
+    expect(loginErrorMessage(serverError)).toBe(
+      'No pudimos iniciar sesión. Inténtalo de nuevo en unos minutos.',
+    );
   });
 });

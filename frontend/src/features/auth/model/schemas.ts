@@ -27,6 +27,13 @@ export const registerSchema = z.object({
 
 export type RegisterFormValues = z.output<typeof registerSchema>;
 
+export const loginSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, 'Escribe tu contraseña.'),
+});
+
+export type LoginFormValues = z.output<typeof loginSchema>;
+
 export const resendSchema = z.object({ email: emailSchema });
 
 export type ResendFormValues = z.output<typeof resendSchema>;
