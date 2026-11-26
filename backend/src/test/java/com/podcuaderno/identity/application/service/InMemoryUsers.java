@@ -27,7 +27,9 @@ class InMemoryUsers implements UserRepository {
 
     @Override
     public Optional<User> findByEmail(EmailAddress email) {
-        return users.values().stream().filter(user -> user.email().equals(email)).findFirst();
+        return users.values().stream()
+                .filter(user -> user.email().equals(email))
+                .findFirst();
     }
 
     @Override
