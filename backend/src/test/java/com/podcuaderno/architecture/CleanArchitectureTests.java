@@ -11,4 +11,7 @@ class CleanArchitectureTests {
 
     @ArchTest
     static final ArchTests dependencyRules = ArchTests.in(DependencyRules.class);
+
+    @ArchTest
+    static final ArchTests namingRules = ArchTests.in(NamingRules.class);
 }
