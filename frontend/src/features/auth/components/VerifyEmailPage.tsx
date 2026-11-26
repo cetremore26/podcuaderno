@@ -21,7 +21,7 @@ export function VerifyEmailPage() {
 
   useEffect(() => {
     if (location.hash) {
-      navigate(location.pathname, { replace: true });
+      void navigate(location.pathname, { replace: true });
     }
   }, [location.hash, location.pathname, navigate]);
 
