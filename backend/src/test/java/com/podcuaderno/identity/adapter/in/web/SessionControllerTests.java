@@ -6,15 +6,19 @@ import static org.mockito.Mockito.when;
 
 import com.podcuaderno.identity.application.port.in.LogInCommand;
 import com.podcuaderno.identity.application.port.in.LogInUseCase;
+import com.podcuaderno.identity.application.port.in.RefreshSessionCommand;
+import com.podcuaderno.identity.application.port.in.RefreshSessionUseCase;
 import com.podcuaderno.identity.application.port.in.SessionTokens;
 import com.podcuaderno.identity.domain.exception.EmailNotVerifiedException;
 import com.podcuaderno.identity.domain.exception.InvalidCredentialsException;
+import com.podcuaderno.identity.domain.exception.InvalidRefreshTokenException;
 import com.podcuaderno.identity.domain.exception.TooManyLoginAttemptsException;
 import com.podcuaderno.shared.adapter.in.web.ApiSecurityTestConfiguration;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -41,6 +45,9 @@ class SessionControllerTests {
 
     @MockitoBean
     private LogInUseCase logIn;
+
+    @MockitoBean
+    private RefreshSessionUseCase refreshSession;
 
     private MvcTestResult logIn() {
         return mvc.post()
@@ -113,6 +120,41 @@ class SessionControllerTests {
                 .exchange();
 
         assertThat(result).hasStatus(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void refreshRotatesTheCookie() {
+        when(refreshSession.refresh(new RefreshSessionCommand("old-refresh")))
+                .thenReturn(new SessionTokens(
+                        "new-access", NOW.plus(Duration.ofMinutes(15)), "new-refresh", NOW.plus(Duration.ofDays(14))));
+
+        MvcTestResult result = mvc.post()
+                .uri("/api/v1/auth/refresh")
+                .cookie(new Cookie(RefreshTokenCookies.NAME, "old-refresh"))
+                .exchange();
+
+        assertThat(result).hasStatusOk();
+        assertThat(result).bodyJson().extractingPath("$.accessToken").isEqualTo("new-access");
+        assertThat(result.getResponse().getHeader(HttpHeaders.SET_COOKIE))
+                .startsWith("pc_refresh=new-refresh")
+                .contains("HttpOnly", "SameSite=Strict");
+    }
+
+    @Test
+    void refreshWithoutCookieAnswers401() {
+        assertThat(mvc.post().uri("/api/v1/auth/refresh"))
+                .hasStatus(HttpStatus.UNAUTHORIZED)
+                .bodyJson()
+                .extractingPath("$.type")
+                .isEqualTo("/errors/unauthenticated");
+    }
+
+    @Test
+    void refreshWithAnInvalidCookieAnswers401() {
+        when(refreshSession.refresh(any())).thenThrow(new InvalidRefreshTokenException());
+
+        assertThat(mvc.post().uri("/api/v1/auth/refresh").cookie(new Cookie(RefreshTokenCookies.NAME, "stolen")))
+                .hasStatus(HttpStatus.UNAUTHORIZED);
     }
 
     @TestConfiguration(proxyBeanMethods = false)
