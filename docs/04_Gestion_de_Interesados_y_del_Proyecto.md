@@ -1,8 +1,8 @@
 # Gestión de interesados y del proyecto
 
 **Proyecto:** Podcuaderno
-**Versión:** 0.3 (borrador)
-**Fecha:** 25 de noviembre de 2026
+**Versión:** 0.4 (borrador)
+**Fecha:** 26 de noviembre de 2026
 **Autor:** Sebastián
 
 ---
@@ -66,9 +66,9 @@ Este documento define quién tiene interés en el proyecto, cómo se comunica el
 ### 3.1 Flujo de trabajo en Git
 
 - Monorepo con carpetas `frontend/`, `backend/` y `docs/`.
-- Trunk-Based Development: ramas cortas desde `main` (`feat/hu-16-generar-voz`) que viven menos de 3 días.
-- Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `ci:`).
-- `main` protegida; despliegue a producción al crear la etiqueta `vX.Y.Z` (versionado semántico).
+- Gitflow (ADR-0006): `main` (producción) y `develop` (integración). Ramas `feature/`, `docs/`, `chore/` y `ci/` desde `develop`, con slug en inglés (`feature/notebook-crud`), integradas por pull request con `--no-ff`. Ramas `release/x.y.z` y `hotfix/x.y.z` hacia `main`.
+- Conventional Commits en inglés con ámbito (`feat(notebooks): ...`).
+- `main` y `develop` protegidas. El despliegue a producción se hace al crear la etiqueta `vX.Y.Z` en `main` (versionado semántico).
 
 ## 4. Cronograma
 
@@ -136,10 +136,10 @@ Escala de 1 (bajo) a 3 (alto). Exposición = probabilidad × impacto.
 
 | Aspecto | Práctica | Herramientas |
 |---|---|---|
-| Backend | Pruebas unitarias y de integración con base de datos real en contenedor; estilo de código. | JUnit 5, Mockito, Testcontainers, JaCoCo, Spotless o Checkstyle |
+| Backend | Pruebas unitarias y de integración con base de datos real en contenedor; estilo de código. | JUnit Jupiter 6, Mockito, Testcontainers, JaCoCo, Spotless |
 | Frontend | Pruebas de componentes y de hooks clave; estilo de código. | Vitest, Testing Library, ESLint, Prettier |
 | Extremo a extremo | Flujo principal: registrarse, importar, editar, generar y descargar. | Playwright |
-| Calidad estática | Análisis en cada pull request. | SonarQube o SonarCloud |
+| Calidad estática | Análisis en cada pull request. | SonarCloud |
 | Seguridad | Escaneo dinámico antes de cada versión; dependencias y secretos. | OWASP ZAP, Dependabot, escaneo de secretos de GitHub |
 | Usabilidad y accesibilidad | Prueba con 5 usuarios; auditoría automática. | Sesiones observadas, Lighthouse |
 
@@ -184,3 +184,4 @@ Escala de 1 (bajo) a 3 (alto). Exposición = probabilidad × impacto.
 | 0.1 | 25 de noviembre de 2026 | Gestión de la herramienta de línea de comandos. |
 | 0.2 | 25 de noviembre de 2026 | Reescrito para la aplicación web freemium: nuevos interesados (usuarios, autoridades), riesgos, cronograma de 20 semanas y punto de decisión de la v2. |
 | 0.3 | 26 de noviembre de 2026 | Nombre definitivo Podcuaderno y riesgo R-13 sobre la marca. |
+| 0.4 | 26 de noviembre de 2026 | Flujo de trabajo Gitflow (ADR-0006); herramientas de calidad definidas (Spotless, SonarCloud). |

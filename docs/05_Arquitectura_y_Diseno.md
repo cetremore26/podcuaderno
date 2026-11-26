@@ -2,7 +2,7 @@
 
 **Proyecto:** Podcuaderno
 **Documento:** Arquitectura de software, diseño y estándares de código
-**Versión:** 0.1 (borrador)
+**Versión:** 0.2 (borrador)
 **Fecha:** 26 de noviembre de 2026
 **Autor:** Sebastián
 
@@ -304,6 +304,8 @@ El módulo `importing` no conoce a `notebooks`: devuelve una vista previa y es e
 | Demasiadas peticiones | 429 | `/errors/rate-limit` |
 | Error inesperado | 500 | `/errors/internal` (se registra con un ID de correlación) |
 
+El `title` y el `detail` de los Problem Details van en inglés porque los consume el frontend; la interfaz muestra al usuario un mensaje en español según el `type`.
+
 ### 5.7 Validación en tres niveles
 
 1. **Formato** (adaptador de entrada): Bean Validation en los DTO (`@NotBlank`, `@Size`).
@@ -421,6 +423,7 @@ La v1.0 usa un adaptador de voz en WebAssembly. En la v2, un `PremiumVoiceEngine
 
 ### 9.2 Git y revisión
 
+- Flujo Gitflow (ADR-0006): ramas `feature/`, `docs/`, `chore/` y `ci/` desde `develop`; `release/` y `hotfix/` hacia `main`.
 - Conventional Commits: `feat(notebooks): allow moving concepts between topics`.
 - Pull requests pequeños (idealmente menos de 400 líneas cambiadas) y enlazados a su historia.
 - **Checklist del pull request:**
@@ -435,8 +438,8 @@ La v1.0 usa un adaptador de voz en WebAssembly. En la v2, un `PremiumVoiceEngine
 
 | Capa | Tipo de prueba | Herramientas | Qué se busca |
 |---|---|---|---|
-| Dominio | Unitarias puras | JUnit 5, AssertJ | Reglas e invariantes. Cobertura objetivo ≥ 90 %. |
-| Aplicación | Unitarias con dobles de los puertos | JUnit 5, Mockito o implementaciones en memoria | Orquestación, permisos, eventos publicados. |
+| Dominio | Unitarias puras | JUnit Jupiter 6, AssertJ | Reglas e invariantes. Cobertura objetivo ≥ 90 %. |
+| Aplicación | Unitarias con dobles de los puertos | JUnit Jupiter 6, Mockito o implementaciones en memoria | Orquestación, permisos, eventos publicados. |
 | Adaptadores web | De rebanada | `@WebMvcTest` | Rutas, validación, códigos HTTP, formato de errores. |
 | Adaptadores de persistencia | De integración | Testcontainers con PostgreSQL real | Mapeos, consultas, migraciones. |
 | Módulos | De módulo | `@ApplicationModuleTest` (Spring Modulith) | Que cada módulo arranque aislado y que publique o reciba sus eventos. |
@@ -488,6 +491,32 @@ class CleanArchitectureTests {
 }
 ```
 
+Configuración de Spring Modulith (ADR-0008): `shared` es un módulo abierto (`OPEN`) que consumen todos los módulos; los eventos de dominio se exponen como la interfaz nombrada `events` (`<módulo>.domain.event`); y las reglas de ArchUnit toleran los paquetes vacíos (`withOptionalLayers(true)` y `allowEmptyShould(true)`), para que la estructura se pueda crear de forma incremental.
+
+**Convenciones de nombres verificadas** (ArchUnit):
+
+| Elemento | Convención |
+|---|---|
+| Puerto de entrada | Interfaz `*UseCase` en `application.port.in` |
+| Comando | Record `*Command` en `application.port.in` |
+| Servicio de aplicación | Clase `*Service` en `application.service` que implementa un `*UseCase`; único lugar con `@Transactional` |
+| Puerto de persistencia | Interfaz `*Repository` en `application.port.out` |
+| Controlador | `*Controller` con `@RestController` en `adapter.in.web` |
+| Listener | `*Listener` en `adapter.in.event` |
+| Entidad JPA | `*JpaEntity` con `@Entity` en `adapter.out.persistence` |
+| Repositorio Spring Data | `*JpaRepository` en `adapter.out.persistence` |
+| Mapper | `*Mapper` en un paquete `adapter` |
+| Excepción | `*Exception` que extiende `RuntimeException`; las de dominio viven en `domain.exception` y extienden `DomainException` de `shared` |
+| Evento de dominio | Record en `domain.event` |
+| Identificador | Record `*Id` en `domain` |
+
+**Reglas de dependencia adicionales:**
+
+- la aplicación no depende de web, persistencia ni Security;
+- `@Transactional` solo va en `application.service`;
+- `shared` no depende de los módulos de negocio;
+- no se usan `System.out` ni `java.util.logging`.
+
 **Frontend:** reglas de importación con ESLint (`no-restricted-imports` o `eslint-plugin-boundaries`): `core/` no puede importar React ni `features/`, y una funcionalidad solo puede importar el `index.ts` de otra.
 
 ## 12. Lo que NO se hace (para no caer en sobreingeniería)
@@ -523,11 +552,15 @@ class CleanArchitectureTests {
 | [ADR-0003](adr/0003-comunicacion-entre-modulos.md) | Comunicación entre módulos por eventos de dominio. |
 | [ADR-0004](adr/0004-verificacion-automatica-arquitectura.md) | Verificación automática con ArchUnit y Spring Modulith. |
 | [ADR-0005](adr/0005-idioma-del-codigo.md) | Código en inglés, documentación en español. |
+| [ADR-0006](adr/0006-flujo-de-trabajo-gitflow.md) | Flujo de trabajo Gitflow con `main` y `develop`. |
+| [ADR-0007](adr/0007-gradle-kotlin-dsl.md) | Gradle con Kotlin DSL para el backend. |
+| [ADR-0008](adr/0008-configuracion-spring-modulith.md) | Configuración de Spring Modulith: `shared` abierto, eventos como interfaz nombrada y registro de publicaciones con JPA. |
 
-Las decisiones pendientes (voz en el navegador, armado del M4B, hosting, licencia del código) se registrarán como ADR-0006 en adelante.
+Las decisiones pendientes (voz en el navegador, armado del M4B, hosting, licencia del código) se registrarán como ADR-0009 en adelante.
 
 ## Historial de versiones
 
 | Versión | Fecha | Cambio |
 |---|---|---|
 | 0.1 | 26 de noviembre de 2026 | Versión inicial. |
+| 0.2 | 26 de noviembre de 2026 | Gitflow, Gradle y configuración de Modulith (ADR-0006 a ADR-0008); convenciones de nombres verificadas; JUnit Jupiter 6. |
