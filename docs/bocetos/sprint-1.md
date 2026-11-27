@@ -129,6 +129,8 @@ Si el servidor falla, aparece arriba: "No pudimos crear tu cuenta. Inténtalo de
 ```
 "¿Olvidaste tu contraseña?" no aparece: es HU-03, del S2.
 
+Actualizado en el Sprint 2: ver B17 en [`sprint-2.md`](sprint-2.md).
+
 **B5. Política de datos (`/politica-de-datos`)**
 ```
 ┌────────────────────────────────────┐

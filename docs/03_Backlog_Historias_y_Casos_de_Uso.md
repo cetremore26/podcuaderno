@@ -1,8 +1,8 @@
 # Backlog, historias de usuario y casos de uso
 
 **Proyecto:** Podcuaderno
-**Versión:** 0.5 (borrador)
-**Fecha:** 26 de noviembre de 2026
+**Versión:** 0.6 (borrador)
+**Fecha:** 27 de noviembre de 2026
 **Autor:** Sebastián
 
 ---
@@ -53,6 +53,7 @@
 
 - Cuando pido recuperar la contraseña, entonces recibo un enlace válido por 30 minutos y de un solo uso.
 - Dado un enlace usado o vencido, cuando lo abro, entonces veo un mensaje claro y la opción de pedir otro.
+- Alcance: al cambiarla se cierran las sesiones; una cuenta pendiente queda activa ([ADR-0014](adr/0014-recuperacion-de-contrasena.md)).
 
 **HU-04 · Eliminar mi cuenta** · M · 2 pts · RF-04, RNF-02
 > Como **estudiante**, quiero eliminar mi cuenta y todos mis datos, para ejercer mi derecho sobre mi información.
@@ -82,6 +83,7 @@
 - Dado un Markdown con `#` y `##`, cuando lo importo, entonces `#` crea temas y `##` crea conceptos.
 - Dado un archivo de más de 5 MB, cuando lo subo, entonces veo un mensaje con el límite y no se procesa.
 - Dado un texto con más de 200 000 caracteres, cuando lo importo, entonces se me informa el límite.
+- Alcance: las reglas de detección (texto antes del primer título, niveles `###` en adelante) y qué cuenta para los límites están en [ADR-0013](adr/0013-importacion-de-apuntes.md).
 
 **HU-08 · Importar Word** · M · 5 pts · RF-07
 > Como **estudiante**, quiero subir mis apuntes de Word, para aprovechar los títulos que ya tienen.
@@ -95,6 +97,7 @@
 
 - Dado un texto sin títulos, cuando lo importo, entonces se crea un tema con un concepto por párrafo y cada concepto se titula con sus primeras 6 palabras.
 - La vista previa de la importación muestra la estructura propuesta antes de guardarla.
+- Alcance: el tema se titula con el nombre del archivo o, si se pegó el texto, «Mis apuntes» ([ADR-0013](adr/0013-importacion-de-apuntes.md)).
 
 ### EP-03 · Editor
 
@@ -328,6 +331,7 @@ flowchart LR
 | Flujo principal | 1. Toca "Nuevo cuaderno". 2. Pega texto o sube un TXT, MD o DOCX. 3. El sistema valida el tamaño y el formato. 4. Detecta temas y conceptos. 5. Muestra la vista previa de la estructura. 6. El estudiante confirma y el cuaderno se guarda. |
 | Flujos alternos | 3a. Archivo muy grande o no válido: mensaje con la causa. 4a. Sin títulos: división por párrafos (HU-09). 6a. Invitado: se guarda en el navegador. |
 | Historias | HU-06 a HU-09, HU-21 |
+| Notas | El invitado se difiere a HU-21: en el Sprint 2 la importación exige sesión (ADR-0013). En la interfaz el paso 1 es "Importar apuntes"; "+ Nuevo cuaderno" crea un cuaderno vacío (HU-06). |
 
 **CU-04 · Editar estructura y texto**
 
@@ -385,3 +389,4 @@ flowchart LR
 | 0.3 | 26 de noviembre de 2026 | HU-25 y Definición de Terminado incluyen las pruebas de arquitectura. |
 | 0.4 | 26 de noviembre de 2026 | Gitflow: la Definición de Terminado y HU-25 se refieren a `develop` (ADR-0006). |
 | 0.5 | 26 de noviembre de 2026 | HU-06 aclara que el cuaderno se crea por título; la estructura importada llega con HU-07. Bocetos del Sprint 1 en [`bocetos/sprint-1.md`](bocetos/sprint-1.md). |
+| 0.6 | 27 de noviembre de 2026 | Alcance de HU-03, HU-07 y HU-09 según ADR-0013 y ADR-0014; nota de CU-03 sobre el invitado y el paso "Importar apuntes". Bocetos del Sprint 2 en [`bocetos/sprint-2.md`](bocetos/sprint-2.md). |

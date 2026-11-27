@@ -2,8 +2,8 @@
 
 **Proyecto:** Podcuaderno
 **Documento:** Especificación de requisitos de software (basada en ISO/IEC/IEEE 29148)
-**Versión:** 0.4 (borrador)
-**Fecha:** 25 de noviembre de 2026
+**Versión:** 0.5 (borrador)
+**Fecha:** 27 de noviembre de 2026
 **Autor:** Sebastián
 
 ---
@@ -228,6 +228,7 @@ erDiagram
     users ||--o{ consents : "acepta"
     users ||--o{ email_verification_tokens : "recibe"
     users ||--o{ refresh_tokens : "abre sesiones"
+    users ||--o{ password_reset_tokens : "pide recuperar"
     users ||..o{ notebooks : "posee (sin FK)"
     users ||..o{ usage_events : "genera (sin FK)"
     notebooks ||--o{ topics : "contiene"
@@ -266,6 +267,14 @@ erDiagram
         timestamp rotated_at
         timestamp revoked_at
     }
+    password_reset_tokens {
+        uuid id PK
+        uuid user_id FK
+        string token_hash UK
+        timestamp created_at
+        timestamp expires_at
+        timestamp used_at
+    }
     notebooks {
         uuid id PK
         uuid owner_id
@@ -298,7 +307,7 @@ erDiagram
 
 | Módulo | Tablas | Notas |
 |---|---|---|
-| `identity` | `users`, `consents`, `email_verification_tokens`, `refresh_tokens` | La cuenta queda `PENDING_VERIFICATION` hasta confirmar el correo (`email_verified_at`). Los tokens de verificación y de sesión se guardan solo como hash SHA-256 (ADR-0009). |
+| `identity` | `users`, `consents`, `email_verification_tokens`, `refresh_tokens`, `password_reset_tokens` | La cuenta queda `PENDING_VERIFICATION` hasta confirmar el correo (`email_verified_at`). Los tokens de verificación, de sesión y de recuperación de contraseña se guardan solo como hash SHA-256 (ADR-0009 y ADR-0014). |
 | `notebooks` | `notebooks`, `topics`, `concepts` | Borrar un cuaderno borra en cascada sus temas y conceptos. `spoken_text` (texto para audio) llega con HU-12. |
 | `metrics` | `usage_events` | Solo el tipo de evento y la cantidad de caracteres, nunca el contenido. |
 
@@ -330,3 +339,4 @@ erDiagram
 | 0.2 | 25 de noviembre de 2026 | Reescrito para la aplicación web freemium con Java + React. |
 | 0.3 | 26 de noviembre de 2026 | Arquitectura definida: Clean Architecture por módulo, nombres de módulos en inglés, RNF-09 con verificación automática. |
 | 0.4 | 26 de noviembre de 2026 | Modelo de datos en inglés y por módulo, sin claves foráneas entre módulos (ADR-0010); `status` y `email_verified_at` en lugar de `correo_verificado`; tablas de tokens de verificación y de sesión; `SameSite=Strict` en RNF-01 (ADR-0009). |
+| 0.5 | 27 de noviembre de 2026 | Tabla `password_reset_tokens` en el modelo de datos de `identity` (ADR-0014). |
