@@ -2,7 +2,7 @@
 
 **Proyecto:** Podcuaderno
 **Documento:** Arquitectura de software, diseño y estándares de código
-**Versión:** 0.3 (borrador)
+**Versión:** 0.4 (borrador)
 **Fecha:** 26 de noviembre de 2026
 **Autor:** Sebastián
 
@@ -346,6 +346,7 @@ frontend/src
 │   ├── editor/
 │   ├── import/
 │   ├── generation/
+│   ├── privacy/            ← política de datos pública y su versión
 │   └── admin/
 │       └── (cada una con) components/  hooks/  api/  model/
 ├── core/                   ← lógica sin React, independiente de la interfaz
@@ -366,6 +367,15 @@ frontend/src
 4. **La voz y el armado del audio corren en un Web Worker**, para que la interfaz no se congele mientras se procesa (el hilo principal y el event loop quedan libres).
 5. **Estado del servidor con TanStack Query** (caché, reintentos, sincronización). Estado local con el estado de React; se agrega una librería global solo si hace falta.
 6. **Formularios con React Hook Form y validación con Zod**, con los mismos límites que el backend.
+
+### 6.2.1 Cómo quedó el Sprint 1
+
+- **Sesión.** `core/http/session.ts` guarda el token de acceso solo en memoria. `core/http/refreshSession.ts` lo renueva con la cookie `HttpOnly`: una sola renovación en curso y, entre pestañas, serializada con la Web Locks API (ADR-0009 y ADR-0011). `requestJson` agrega el token, lo renueva si está por vencer, reintenta una vez tras un 401 y nunca envía `Authorization` a `/api/v1/auth/**`.
+- **Errores.** El frontend distingue los problemas por `type` y por `code` (`isProblem`), nunca por el texto del `detail`.
+- **Rutas privadas.** `RequireSession` recupera la sesión tras recargar la página o lleva a `/iniciar-sesion` y, al entrar, devuelve a la página que se quería abrir.
+- **Componentes compartidos.** `shared/components` tiene `Button`, `TextField`, `CheckboxField` y `Alert`, con la ayuda y el error asociados por `aria-describedby`. Los diálogos usan el `<dialog>` nativo.
+- **Variables de build.** Solo para datos públicos: `VITE_PRIVACY_CONTACT_EMAIL` es el correo de contacto de la política de datos; si está vacío, la página dice que se publicará pronto.
+- **Pruebas.** Las pruebas de componentes simulan la capa `api/` con `vi.hoisted` y `vi.mock`, así respetan la regla 1 sin importar `api/` desde `components/`. El E2E de Playwright recorre registro, correo (leído desde la API de Mailpit), inicio de sesión y primer cuaderno contra el stack de Docker Compose, en escritorio y a 360 px.
 
 ### 6.3 Ejemplo: inversión de dependencias en el motor de voz
 
@@ -549,6 +559,8 @@ Configuración de Spring Modulith (ADR-0008): `shared` es un módulo abierto (`O
 | Enlace de verificación de correo | `EmailVerificationToken` |
 | Sesión renovable (refresh token) | `RefreshToken` |
 | Usuario autenticado en una petición | `AuthenticatedUser` |
+| Política de datos (versión aceptada) | `PrivacyPolicy` / `PRIVACY_POLICY_VERSION` |
+| Token de acceso en memoria | `AccessToken` (`core/http/session.ts`) |
 | Evento de uso | `UsageEvent` |
 | Tipo de evento de uso | `UsageEventType` |
 | Importación / vista previa | `Import` / `ImportPreview` |
@@ -570,8 +582,9 @@ Configuración de Spring Modulith (ADR-0008): `shared` es un módulo abierto (`O
 | [ADR-0009](adr/0009-autenticacion-y-sesiones.md) | Autenticación y sesiones: Argon2id, JWT HS256, refresh token opaco con rotación y cookie `SameSite=Strict`. |
 | [ADR-0010](adr/0010-datos-y-eventos-entre-modulos.md) | Sin claves foráneas entre módulos; eventos con tipos de `shared`; `DomainEventPublisher` en `shared`. |
 | [ADR-0011](adr/0011-frontend-rutas-estilos-y-sesion.md) | Frontend: react-router en modo declarativo, CSS propio, `<dialog>` nativo y token en memoria. |
+| [ADR-0012](adr/0012-proveedor-de-correo-resend.md) | Correo transaccional con Resend por SMTP; Mailpit en local y en el CI. |
 
-Las decisiones pendientes (voz en el navegador, armado del M4B, hosting, licencia del código) se registrarán como ADR-0012 en adelante.
+Las decisiones pendientes (voz en el navegador, armado del M4B, hosting, licencia del código) se registrarán como ADR-0013 en adelante.
 
 ## Historial de versiones
 
@@ -580,3 +593,4 @@ Las decisiones pendientes (voz en el navegador, armado del M4B, hosting, licenci
 | 0.1 | 26 de noviembre de 2026 | Versión inicial. |
 | 0.2 | 26 de noviembre de 2026 | Gitflow, Gradle y configuración de Modulith (ADR-0006 a ADR-0008); convenciones de nombres verificadas; JUnit Jupiter 6. |
 | 0.3 | 26 de noviembre de 2026 | Sprint 1: autenticación y sesiones, datos y eventos entre módulos, y frontend (ADR-0009 a ADR-0011); `code`, `Retry-After` y 401 de inicio de sesión en los errores; adaptadores de salida de correo y seguridad. |
+| 0.4 | 26 de noviembre de 2026 | Cierre del Sprint 1: cómo quedaron la sesión, los errores, las rutas privadas y las pruebas del frontend (§6.2.1); términos nuevos en el lenguaje ubicuo; ADR-0012 en la tabla de decisiones. |
