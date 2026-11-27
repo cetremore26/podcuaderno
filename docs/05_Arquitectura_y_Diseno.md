@@ -2,8 +2,8 @@
 
 **Proyecto:** Podcuaderno
 **Documento:** Arquitectura de software, diseño y estándares de código
-**Versión:** 0.4 (borrador)
-**Fecha:** 26 de noviembre de 2026
+**Versión:** 0.5 (borrador)
+**Fecha:** 27 de noviembre de 2026
 **Autor:** Sebastián
 
 ---
@@ -155,6 +155,7 @@ com.podcuaderno.notebooks
 Notas (ADR-0010):
 - El puerto `DomainEventPublisher` no se repite en cada módulo: vive en `shared.application.port.out` y lo implementa `shared.adapter.out.event.SpringDomainEventPublisher`.
 - Además de `adapter.out.persistence`, los adaptadores de salida pueden vivir en `adapter.out.email` (envío de correo) y `adapter.out.security` (hash de contraseñas, firma de tokens, límite de intentos). Son los únicos paquetes de adaptadores que reconoce ArchUnit; uno nuevo exige ampliar la regla `cleanLayers`.
+- ADR-0013 agrega `adapter.out.document` (lectores de archivos de `importing`, adaptador `documentReading` en `cleanLayers`).
 
 ### 5.3 Responsabilidades y reglas por capa
 
@@ -292,6 +293,11 @@ sequenceDiagram
 
 El módulo `importing` no conoce a `notebooks`: devuelve una vista previa y es el frontend el que confirma la creación. Así cada módulo tiene una sola razón para cambiar.
 
+Contrato vigente desde el Sprint 2 ([ADR-0013](adr/0013-importacion-de-apuntes.md)):
+- `POST /api/v1/imports` acepta `multipart/form-data` con la parte `file` (`.txt`, `.md` o `.markdown`) o JSON `{"text": "…"}` para el texto pegado. Exige sesión y responde 200 con la vista previa (`suggestedTitle`, `structure`, conteos, elementos omitidos y temas con sus conceptos). No guarda nada.
+- El servicio elige el lector con `DocumentReaderFactory`, una clase Java pura de `importing.application.port.out` que construye una `@Configuration` del adaptador `adapter.out.document` con los `DocumentReader` disponibles.
+- `POST /api/v1/notebooks` recibe `{title, topics?}` con la estructura confirmada y responde 201 con la cabecera `Location: /api/v1/notebooks/{id}`. `GET /api/v1/notebooks/{id}` devuelve el cuaderno con sus temas y conceptos.
+
 ### 5.6 Manejo de errores
 
 - El dominio lanza excepciones con significado de negocio (`ConceptNotFoundException`, `InvalidTitleException`).
@@ -304,13 +310,14 @@ El módulo `importing` no conoce a `notebooks`: devuelve una vista previa y es e
 | No autenticado o token vencido | 401 | `/errors/unauthenticated` |
 | Credenciales o sesión inválidas (inicio de sesión fallido, refresh token inválido) | 401 | `/errors/unauthenticated` (mensaje genérico) |
 | Recurso inexistente o de otro usuario | 404 | `/errors/not-found` |
+| Archivo o petición demasiado grande (más de 5 MB) | 413 | `/errors/payload-too-large` |
 | Regla de negocio violada (por ejemplo, posición inválida) | 422 | `/errors/business-rule`, con la propiedad `code` |
 | Demasiadas peticiones | 429 | `/errors/rate-limit`, con la cabecera `Retry-After` y la propiedad `retryAfterSeconds` |
 | Error inesperado | 500 | `/errors/internal` (se registra con un ID de correlación) |
 
 El `title` y el `detail` de los Problem Details van en inglés porque los consume el frontend; la interfaz muestra al usuario un mensaje en español según el `type`.
 
-Las reglas de negocio llevan además una propiedad `code` (por defecto `business-rule`) para que el frontend distinga los casos sin leer el `detail`: por ejemplo `email-not-verified`, `invalid-verification-token`, `outdated-privacy-policy`, `invalid-email`, `invalid-password` e `invalid-title`.
+Las reglas de negocio llevan además una propiedad `code` (por defecto `business-rule`) para que el frontend distinga los casos sin leer el `detail`: por ejemplo `email-not-verified`, `invalid-verification-token`, `outdated-privacy-policy`, `invalid-email`, `invalid-password` e `invalid-title`. El Sprint 2 agrega `unsupported-file-type`, `unreadable-file`, `empty-document`, `text-too-long`, `too-many-concepts`, `notebook-too-long` e `invalid-password-reset-token`.
 
 ### 5.7 Validación en tres niveles
 
@@ -563,7 +570,13 @@ Configuración de Spring Modulith (ADR-0008): `shared` es un módulo abierto (`O
 | Token de acceso en memoria | `AccessToken` (`core/http/session.ts`) |
 | Evento de uso | `UsageEvent` |
 | Tipo de evento de uso | `UsageEventType` |
-| Importación / vista previa | `Import` / `ImportPreview` |
+| Importación / vista previa | `Import` / `ImportPreview` (DTO de respuesta) |
+| Documento leído, en bloques limpios | `RawDocument` |
+| Estructura detectada (temas y conceptos propuestos) | `DetectedStructure` |
+| Lector de un formato de archivo | `DocumentReader` |
+| Detector de temas y conceptos | `StructureDetector` |
+| Enlace de un solo uso (ciclo de vida común) | `SingleUseToken` |
+| Enlace de recuperación de contraseña | `PasswordResetToken` |
 | Audiolibro | `Audiobook` |
 | Voz gratuita / premium | `BrowserVoiceEngine` / `PremiumVoiceEngine` |
 
@@ -583,8 +596,10 @@ Configuración de Spring Modulith (ADR-0008): `shared` es un módulo abierto (`O
 | [ADR-0010](adr/0010-datos-y-eventos-entre-modulos.md) | Sin claves foráneas entre módulos; eventos con tipos de `shared`; `DomainEventPublisher` en `shared`. |
 | [ADR-0011](adr/0011-frontend-rutas-estilos-y-sesion.md) | Frontend: react-router en modo declarativo, CSS propio, `<dialog>` nativo y token en memoria. |
 | [ADR-0012](adr/0012-proveedor-de-correo-resend.md) | Correo transaccional con Resend por SMTP; Mailpit en local y en el CI. |
+| [ADR-0013](adr/0013-importacion-de-apuntes.md) | Importación de texto, TXT y Markdown: commonmark-java, reglas de detección, límites, endpoint con sesión y paquete `adapter.out.document`. |
+| [ADR-0014](adr/0014-recuperacion-de-contrasena.md) | Recuperación de contraseña: tabla propia, `SingleUseToken`, enlace de 30 minutos y un solo uso, y revocación de las sesiones. |
 
-Las decisiones pendientes (voz en el navegador, armado del M4B, hosting, licencia del código) se registrarán como ADR-0013 en adelante.
+Las decisiones pendientes (voz en el navegador, armado del M4B, hosting, licencia del código) se registrarán como ADR-0015 en adelante.
 
 ## Historial de versiones
 
@@ -594,3 +609,4 @@ Las decisiones pendientes (voz en el navegador, armado del M4B, hosting, licenci
 | 0.2 | 26 de noviembre de 2026 | Gitflow, Gradle y configuración de Modulith (ADR-0006 a ADR-0008); convenciones de nombres verificadas; JUnit Jupiter 6. |
 | 0.3 | 26 de noviembre de 2026 | Sprint 1: autenticación y sesiones, datos y eventos entre módulos, y frontend (ADR-0009 a ADR-0011); `code`, `Retry-After` y 401 de inicio de sesión en los errores; adaptadores de salida de correo y seguridad. |
 | 0.4 | 26 de noviembre de 2026 | Cierre del Sprint 1: cómo quedaron la sesión, los errores, las rutas privadas y las pruebas del frontend (§6.2.1); términos nuevos en el lenguaje ubicuo; ADR-0012 en la tabla de decisiones. |
+| 0.5 | 27 de noviembre de 2026 | Sprint 2: contrato de importación con JSON y *multipart*, `DocumentReaderFactory` y paquete `adapter.out.document` (ADR-0013); 413 y códigos nuevos de error; recuperación de contraseña (ADR-0014); términos nuevos en el lenguaje ubicuo. |
